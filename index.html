@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>畅有趣 - AI 电影视频故事板生成器 | 在线免费分镜脚本工具</title>
+<meta name="description" content="畅有趣（changyouq.cn）提供免费在线 AI 电影视频故事板生成器：输入故事创意，自动生成分镜脚本、画面提示词、AI 生图与生视频，支持批量生成、导出 PNG/HTML/JSON，适用于短视频、广告片、MV、纪录片创作。">
+<meta name="keywords" content="畅有趣,AI故事板生成器,电影分镜,视频分镜脚本,AI生图,AI生视频,分镜工具,故事板软件,短剧分镜,免费在线分镜">
+<meta name="author" content="畅有趣">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#6c5ce7">
+<link rel="canonical" href="https://changyouq.cn/">
+<link rel="sitemap" type="application/xml" href="/sitemap.xml">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="畅有趣">
+<meta property="og:title" content="畅有趣 - AI 电影视频故事板生成器">
+<meta property="og:description" content="输入故事创意，AI 自动生成完整分镜脚本、画面提示词、分镜图与视频，支持批量生成与多格式导出。免费在线使用。">
+<meta property="og:url" content="https://changyouq.cn/">
+<meta property="og:image" content="https://changyouq.cn/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="畅有趣 - AI 电影视频故事板生成器">
+<meta property="og:locale" content="zh_CN">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="畅有趣 - AI 电影视频故事板生成器">
+<meta name="twitter:description" content="输入故事创意，AI 自动生成完整分镜脚本、画面提示词、分镜图与视频。">
+<meta name="twitter:image" content="https://changyouq.cn/og-image.png">
+<!-- 结构化数据：GEO/AI 搜索友好 -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://changyouq.cn/#website",
+      "name": "畅有趣",
+      "alternateName": "changyouq",
+      "url": "https://changyouq.cn/",
+      "inLanguage": "zh-CN",
+      "description": "免费在线 AI 电影视频故事板生成器：自动生成分镜脚本、画面提示词、AI 生图与生视频。"
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://changyouq.cn/#app",
+      "name": "畅有趣 AI 故事板生成器",
+      "url": "https://changyouq.cn/",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Web",
+      "inLanguage": "zh-CN",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
+      "featureList": [
+        "AI 生成分镜脚本与画面提示词",
+        "AI 批量生成图片与视频",
+        "分镜时间轴与台词音效管理",
+        "导出 Markdown/JSON/HTML/PNG"
+      ],
+      "author": { "@type": "Person", "name": "畅有趣" }
+    }
+  ]
+}
+</script>
+<link rel="stylesheet" href="css.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">🎬</span>
+      <div class="logo-text">
+        <h1>畅有趣 · AI 电影故事板生成器</h1>
+        <div class="sub">changyouq.cn | Cinematic Storyboard Generator</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-sm" onclick="showHelpModal()" title="使用说明" aria-label="使用说明">
+        <span>❓</span> 使用说明
+      </button>
+      <div class="export-dropdown">
+        <button class="btn btn-primary btn-sm" onclick="toggleExportMenu()" aria-label="导出菜单">
+          <span>📥</span> 导出
+        </button>
+        <div class="export-menu" id="exportMenu">
+          <button class="export-item" onclick="event.stopPropagation();exportPromptsMD()">📄 提示词 (Markdown)</button>
+          <button class="export-item" onclick="event.stopPropagation();exportPromptsJSON()">📋 提示词 (JSON)</button>
+          <button class="export-item" onclick="event.stopPropagation();exportStoryHTML()">🌐 故事板 (HTML)</button>
+          <div class="export-divider"></div>
+          <button class="export-item" onclick="event.stopPropagation();exportImages()">🖼️ 故事板总图 (PNG)</button>
+          <button class="export-item" onclick="event.stopPropagation();exportVideo()">🎞 导出故事板预览视频</button>
+          <button class="export-item" onclick="event.stopPropagation();exportAllShotImages()">🖼️ 导出所有分镜图片</button>
+          <button class="export-item" onclick="event.stopPropagation();exportVideoURLs()">🔗 导出视频URL地址 (TXT)</button>
+          <button class="export-item" onclick="event.stopPropagation();exportImageURLs()">🖼️ 导出分镜图片URL地址 (TXT)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="main">
+  <div class="left-panel">
+    <!-- API Config -->
+    <div class="config-panel" id="configPanel">
+      <div class="config-header" onclick="toggleConfig()">
+        <div class="config-title">
+          <span>⚙️</span> AI 大模型配置
+          <span class="tooltip-wrap" onclick="event.stopPropagation()">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-popup">在此配置AI大模型的API信息。支持配置文字、图片、视频三种模型。配置后可自动生成更高质量的故事板内容。</span>
+          </span>
+        </div>
+        <span class="config-toggle" id="configToggle">▼</span>
+      </div>
+      <div class="config-body">
+        <div class="tabs">
+          <button class="tab active" onclick="switchModelTab('text')">💬 文字大模型</button>
+          <button class="tab" onclick="switchModelTab('image')">🖼️ 图片大模型</button>
+          <button class="tab" onclick="switchModelTab('video')">🎥 视频大模型</button>
+        </div>
+        <div class="tab-content active" id="tab-text">
+          <div class="config-row">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">模型名称 <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-popup">如 gpt-4、claude-3、deepseek-chat 等。</span></span></label>
+              <input type="text" class="form-input" id="textModelName" placeholder="例: gpt-4o / deepseek-chat">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">API Key</label>
+              <div class="input-group">
+                <input type="password" class="form-input" id="textApiKey" placeholder="sk-...">
+                <button class="btn btn-ghost btn-icon btn-sm" onclick="togglePassword('textApiKey', this)">👁️</button>
+              </div>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Base URL</label>
+              <input type="text" class="form-input" id="textBaseUrl" placeholder="https://api.openai.com/v1">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="saveModelConfig('text')" style="margin-bottom:1px">💾 保存</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <button class="btn btn-ghost btn-sm" onclick="testConnection('text')">🔗 测试连接</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetModelConfig('text')">🔄 重置</button>
+          </div>
+          <div class="model-list" id="textModelList"></div>
+        </div>
+        <div class="tab-content" id="tab-image">
+          <div class="config-row">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">模型名称</label>
+              <input type="text" class="form-input" id="imageModelName" placeholder="例: dall-e-3">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">API Key</label>
+              <div class="input-group">
+                <input type="password" class="form-input" id="imageApiKey" placeholder="sk-...">
+                <button class="btn btn-ghost btn-icon btn-sm" onclick="togglePassword('imageApiKey', this)">👁️</button>
+              </div>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Base URL</label>
+              <input type="text" class="form-input" id="imageBaseUrl" placeholder="https://api.openai.com/v1">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="saveModelConfig('image')" style="margin-bottom:1px">💾 保存</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <button class="btn btn-ghost btn-sm" onclick="testConnection('image')">🔗 测试连接</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetModelConfig('image')">🔄 重置</button>
+          </div>
+          <div class="model-list" id="imageModelList"></div>
+        </div>
+        <div class="tab-content" id="tab-video">
+          <div class="config-row">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">模型名称</label>
+              <input type="text" class="form-input" id="videoModelName" placeholder="例: agnes-video-v2.0">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">API Key</label>
+              <div class="input-group">
+                <input type="password" class="form-input" id="videoApiKey" placeholder="sk-...">
+                <button class="btn btn-ghost btn-icon btn-sm" onclick="togglePassword('videoApiKey', this)">👁️</button>
+              </div>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Base URL</label>
+              <input type="text" class="form-input" id="videoBaseUrl" placeholder="https://api.example.com/v1">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="saveModelConfig('video')" style="margin-bottom:1px">💾 保存</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <button class="btn btn-ghost btn-sm" onclick="testConnection('video')">🔗 测试连接</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetModelConfig('video')">🔄 重置</button>
+          </div>
+          <div class="model-list" id="videoModelList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span>✏️</span> 创作输入
+          <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-popup">在此输入您的故事创意、剧本片段或拍摄需求。AI将根据这些内容生成完整的电影故事板，包含完整的情节发展和叙事节奏。</span></span>
+        </div>
+      </div>
+      <div class="spec-bar">
+        <div class="spec-item">
+          <div class="spec-label">影片类型 <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-popup">选择影片的类型，影响画面风格和叙事节奏。</span></span></div>
+          <select id="specType"><option value="电影短片">电影短片</option><option value="广告片">广告片</option><option value="MV">MV</option><option value="纪录片">纪录片</option><option value="预告片">预告片</option><option value="短视频">短视频</option></select>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">画面比例</div>
+          <select id="specRatio"><option value="2.35:1">2.35:1 宽银幕</option><option value="16:9" selected>16:9 标准</option><option value="1:1">1:1 正方形</option><option value="9:16">9:16 竖屏</option></select>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">总时长</div>
+          <select id="specDuration"><option value="15s">15秒</option><option value="30s">30秒</option><option value="60s" selected>60秒</option><option value="2min">2分钟</option><option value="5min">5分钟</option><option value="10min">10分钟</option></select>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">画面风格</div>
+          <select id="specStyle"><option value="电影写实">电影写实</option><option value="赛博朋克">赛博朋克</option><option value="清新自然">清新自然</option><option value="暗黑哥特">暗黑哥特</option><option value="复古胶片">复古胶片</option><option value="动漫风格">动漫风格</option></select>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">色调</div>
+          <select id="specColor"><option value="暖色调">暖色调</option><option value="冷色调">冷色调</option><option value="低饱和">低饱和</option><option value="高对比">高对比</option><option value="霓虹色">霓虹色</option></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">故事描述 / 剧本片段 <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-popup">输入您的故事创意、剧本内容或场景描述。越详细，AI生成的故事板越精准。AI会自动展开完整情节，包含起承转合和人物情感变化。</span></span></label>
+        <textarea class="form-textarea" id="storyInput" rows="6" placeholder="例：一个孤独的机器人在废弃城市中寻找最后一朵花。开场是它从废墟中苏醒，镜头从黑暗中慢慢亮起..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">参考图（可选）</label>
+        <div class="file-drop" id="fileDrop" onclick="document.getElementById('fileInput').click()">
+          <div class="icon">📁</div><div class="text">点击或拖拽上传参考图片</div>
+          <input type="file" id="fileInput" accept="image/*" style="display:none" multiple>
+        </div>
+        <div id="filePreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">额外要求（可选）</label>
+        <input type="text" class="form-input" id="extraRequirements" placeholder="例：需要大量手持镜头感、配乐风格为电子合成器...">
+      </div>
+      <button class="btn btn-accent" onclick="generateStoryboard()" id="generateBtn" style="width:100%;padding:14px;font-size:15px;" aria-label="AI生成故事板">
+        <span>✨</span> AI 生成故事板
+      </button>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-primary" onclick="batchGenerateImages()" id="batchImgBtn" style="flex:1;padding:12px;font-size:14px;" aria-label="批量生成图片">
+          <span>🖼️</span> 批量生图
+        </button>
+        <button class="btn btn-video" onclick="batchGenerateVideos()" id="batchVidBtn" style="flex:1;padding:12px;font-size:14px;" aria-label="批量生成视频">
+          <span>🎥</span> 批量生视频
+        </button>
+        <button class="btn btn-danger" onclick="requestBatchCancel()" id="cancelBatchBtn" style="display:none;padding:12px;font-size:14px;" aria-label="取消批量任务">⏹ 取消</button>
+      </div>
+    </div>
+
+    <!-- Video Generation Status Module -->
+    <div class="card" id="videoStatusCard" style="display:none;">
+      <div class="card-header">
+        <div class="card-title">
+          <span>🎬</span> 视频生成状态
+          <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-popup">实时显示视频生成任务的状态、进度和详细日志。支持Agnes等视频大模型的轮询状态追踪。</span></span>
+        </div>
+        <span id="videoStatusBadge" class="badge badge-primary">等待中</span>
+      </div>
+      <div id="videoStatusContent" style="font-size:13px;color:var(--text-dim);padding:8px;">暂无视频生成任务</div>
+      <div class="log-panel" id="videoLogPanel" style="display:none;">
+        <div class="log-panel-header" onclick="this.parentElement.classList.toggle('collapsed')">
+          <h3>📋 详细日志</h3>
+          <span id="videoLogCount" style="font-size:11px;color:var(--text-dim)">0 条</span>
+        </div>
+        <div class="log-panel-body" id="videoLogBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Storyboard Output -->
+  <div class="right-panel">
+    <div class="card" style="min-height: 600px;">
+      <div class="card-header">
+        <div class="card-title">
+          <span>🎞️</span> 分镜故事板
+          <span class="badge badge-primary" id="shotCount">9 镜</span>
+          <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-popup">3×3 电影分镜板。每个分镜包含：起始/结束画面、运镜方式、台词/旁白、音效描述、时间线。可独立生成图片和视频。</span></span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="clearStoryboard()">🗑️ 清空</button>
+          <button class="btn btn-ghost btn-sm" onclick="randomDemo()">🎲 演示</button>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;padding:10px;background:var(--bg-input);border-radius:var(--radius-sm);font-size:11px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="color:var(--text-dim);">⏱️ 时间线 Timeline</span>
+          <span style="color:var(--accent-light);" id="totalTimeDisplay">00:00 - 01:00</span>
+        </div>
+        <div style="display:flex;gap:2px;height:6px;border-radius:3px;overflow:hidden;" id="timelineBar">
+          <div style="flex:1;background:var(--primary);border-radius:3px;"></div>
+          <div style="flex:1;background:var(--accent);border-radius:3px;"></div>
+          <div style="flex:1;background:var(--primary);border-radius:3px;"></div>
+          <div style="flex:1;background:var(--accent);border-radius:3px;"></div>
+          <div style="flex:1;background:var(--primary);border-radius:3px;"></div>
+          <div style="flex:1;background:var(--accent);border-radius:3px;"></div>
+          <div style="flex:1;background:var(--primary);border-radius:3px;"></div>
+          <div style="flex:1;background:var(--accent);border-radius:3px;"></div>
+          <div style="flex:1;background:var(--primary);border-radius:3px;"></div>
+        </div>
+      </div>
+      <div class="storyboard-grid" id="storyboardGrid"></div>
+      <div id="promptOutput" style="margin-top:16px;display:none;">
+        <div class="card-header" style="margin-bottom:8px;">
+          <div class="card-title"><span>📝</span> 画面提示词</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" id="promptEditBtn" onclick="togglePromptEdit()">✏️ 编辑</button>
+            <button class="btn btn-primary btn-sm" id="promptSubmitBtn" onclick="submitPromptEdit()" style="display:none;">✅ 提交</button>
+            <button class="btn btn-ghost btn-sm" id="promptCancelBtn" onclick="cancelPromptEdit()" style="display:none;">❌ 取消</button>
+          </div>
+        </div>
+        <div class="prompt-box" id="promptContent"></div>
+        <textarea id="promptEditArea" style="display:none;width:100%;min-height:300px;background:var(--bg-input);border:1px solid var(--primary);border-radius:var(--radius-sm);padding:12px;font-size:12px;color:var(--text);font-family:'SF Mono','Fira Code',monospace;resize:vertical;line-height:1.5;white-space:pre-wrap;word-break:break-all;"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📖 使用说明</h2>
+      <button class="modal-close" onclick="closeModal('helpModal')" aria-label="关闭">✕</button>
+    </div>
+    <div class="modal-body">
+      <h3>🎯 应用简介</h3>
+      <p>AI 电影视频故事板生成器是一款面向影视前期筹备、广告与MV提案、小说/剧本视觉化的专业工具。通过AI大模型，将文字创意转化为完整的3×3电影分镜故事板，支持独立生成每个分镜的图片和视频。</p>
+      <h3>🔧 如何使用</h3>
+      <ul>
+        <li><strong>第一步：配置AI模型</strong> — 在顶部配置您的AI大模型API Key（文字模型用于生成故事板，图片模型用于生成画面，视频模型用于生成动态预览）</li>
+        <li><strong>第二步：填写项目规格</strong> — 选择影片类型、画面比例、时长、风格、色调</li>
+        <li><strong>第三步：输入故事内容</strong> — 在创作输入区填写故事描述、剧本片段或场景需求</li>
+        <li><strong>第四步：点击生成</strong> — 点击"AI 生成故事板"按钮，AI会自动展开完整故事情节</li>
+        <li><strong>第五步：生成图片/视频</strong> — 在每个分镜格中点击"生图"或"生视频"按钮生成对应媒体</li>
+      </ul>
+      <h3>🎬 输出内容说明</h3>
+      <ul>
+        <li><strong>3×3 分镜板</strong> — 9个分镜格，每个呈现起止画面、完整情节发展</li>
+        <li><strong>运镜标注</strong> — 推拉摇移、跟拍、航拍、手持等镜头运动方式</li>
+        <li><strong>台词/旁白</strong> — 画面中的人物台词或旁白文字</li>
+        <li><strong>声音设计</strong> — 环境音、音效、配乐描述</li>
+        <li><strong>时间线</strong> — 每个分镜的起止时间点和持续时长</li>
+        <li><strong>画面提示词</strong> — 可直接用于AI绘图工具的英文Prompt</li>
+      </ul>
+      <h3>📥 导出功能</h3>
+      <ul>
+        <li><strong>提示词 MD/JSON</strong> — 导出画面提示词文档</li>
+        <li><strong>故事板 HTML</strong> — 导出独立的HTML页面</li>
+        <li><strong>故事板总图</strong> — 导出3×3拼合的PNG图片</li>
+        <li><strong>所有分镜图片</strong> — 逐个导出每个分镜生成的图片</li>
+        <li><strong>视频URL地址</strong> — 导出所有成功生成的分镜视频URL至TXT文档</li>
+        <li><strong>分镜图片URL地址</strong> — 导出所有成功生成的分镜图片URL至TXT文档</li>
+      </ul>
+      <h3>🖼️ 批量生成功能</h3>
+      <ul>
+        <li><strong>批量生图</strong> — 按分镜顺序逐个生成图片，全部完成后结束</li>
+        <li><strong>批量生视频</strong> — 先确保所有图片已生成，再按分镜顺序逐个生成视频</li>
+        <li>每个视频生成时如2次尝试均失败则跳过，继续下一个</li>
+        <li>所有分镜视频生成完毕后整个批量流程结束</li>
+      </ul>
+      <h3>✏️ 画面提示词编辑</h3>
+      <ul>
+        <li>AI生成故事板后，画面提示词区域右上角有「编辑」按钮</li>
+        <li>点击编辑可修改完整的画面提示词内容</li>
+        <li>修改完成后点击「提交」，系统会自动将修改同步到各分镜详情</li>
+      </ul>
+      <h3>🎥 视频生成功能</h3>
+      <ul>
+        <li>支持Agnes等视频大模型，通过API提交任务后自动轮询状态</li>
+        <li>在"视频生成状态"面板中可实时查看生成进度和详细日志</li>
+        <li>每个分镜可独立生成视频，生成后直接在分镜格内预览</li>
+        <li>视频生成通常需要1-3分钟，请耐心等待</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Prompt Edit Modal -->
+<div class="modal-overlay" id="promptModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>✏️ 编辑分镜详情</h2>
+      <button class="modal-close" onclick="closeModal('promptModal')" aria-label="关闭">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">分镜编号</label><input type="text" class="form-input" id="editShotNum" readonly></div>
+      <div class="form-group"><label class="form-label">画面描述</label><textarea class="form-textarea" id="editDescription" rows="3"></textarea></div>
+      <div class="form-group"><label class="form-label">运镜方式</label><input type="text" class="form-input" id="editCamera"></div>
+      <div class="form-group"><label class="form-label">台词 / 旁白</label><textarea class="form-textarea" id="editDialogue" rows="2"></textarea></div>
+      <div class="form-group"><label class="form-label">声音设计</label><input type="text" class="form-input" id="editSound"></div>
+      <div class="form-group"><label class="form-label">时间码</label><input type="text" class="form-input" id="editTimecode"></div>
+      <div class="form-group">
+        <label class="form-label">画面提示词 (Prompt) <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-popup">英文画面描述提示词，可直接用于Midjourney、DALL-E等AI绘图工具。</span></span></label>
+        <textarea class="form-textarea" id="editPrompt" rows="4" style="font-family:monospace;font-size:12px;"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="saveShotEdit()" style="width:100%;">💾 保存修改</button>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <p>🎬 AI 电影视频故事板生成器 — 让创意可视化</p>
+  <p style="margin-top:8px;color:var(--primary-light);">源码出自：公众号路上侠客，由畅有趣开源并发布。 <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener" style="color:var(--primary-light);text-decoration:underline;">浙ICP备2024105328号</a></p>
+</footer>
+
+<div id="my-popup" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5)">
+  <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:8px;max-width:420px;width:90%;padding:24px;text-align:center">
+    <h3 style="margin:0 0 12px">关注公众号了解更多</h3>
+    <p style="color:#666;margin:0 0 16px"><img class="aligncenter size-medium" src="https://files.seeusercontent.com/2026/09/12/1naO/512.png" width="512" height="512" style="max-width:100%;height:auto;" alt="公众号二维码" /></p>
+    <button onclick="closeMyPopup()" style="background:#4285f4;color:#fff;border:0;border-radius:4px;padding:10px 24px;cursor:pointer">我知道了</button>
+  </div>
+</div>
+<script>
+function closeMyPopup(){
+  document.getElementById('my-popup').style.display='none';
+}
+(function(){
+  var KEY = 'myPopupTime';
+  var DAY = 24 * 60 * 60 * 1000; // 24小时
+  var last = Number(localStorage.getItem(KEY) || 0);
+  if (Date.now() - last < DAY) return; // 24小时内弹过，直接不弹
+  setTimeout(function(){
+    document.getElementById('my-popup').style.display = 'block';
+    localStorage.setItem(KEY, Date.now()); // 弹出时记下时间，从这一刻起算24小时
+  }, 3000);
+  document.getElementById('my-popup').addEventListener('click', function(e){
+    if (e.target === this) closeMyPopup(); // 点遮罩也能关
+  });
+})();
+</script>
+
+<script>
+// ====== State ======
+let state = {
+  models: { text: [], image: [], video: [] },
+  selectedModels: { text: null, image: null, video: null },
+  storyboard: [],
+  uploadedFiles: []
+};
+
+// Video generation log
+const VIDEO_LOG = [];
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('storyboard_gen_state');
+    if (saved) { const parsed = JSON.parse(saved); state = { ...state, ...parsed }; }
+  } catch(e) {}
+  renderModelLists();
+  if (state.storyboard && state.storyboard.length > 0) { try { renderStoryboard(); updateTimeline(); } catch(e) {} }
+}
+
+function saveState() {
+  try { localStorage.setItem('storyboard_gen_state', JSON.stringify({ models: state.models, selectedModels: state.selectedModels, storyboard: state.storyboard })); } catch(e) {}
+}
+
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type} fade-in`;
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span> ${msg}`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+function getSpecRatio() {
+  const el = document.getElementById('specRatio');
+  return el ? el.value : '16:9';
+}
+// 画面比例联动到生图硬参数（DALL-E 兼容尺寸集合）
+function getImageSize() {
+  const r = getSpecRatio();
+  if (r === '9:16') return '1024x1792';
+  if (r === '1:1') return '1024x1024';
+  return '1792x1024'; // 16:9 / 2.35:1
+}
+// 画面比例联动到视频硬参数
+function getVideoDims() {
+  const r = getSpecRatio();
+  if (r === '9:16') return [768, 1152];
+  if (r === '1:1') return [768, 768];
+  return [1152, 768]; // 16:9 / 2.35:1
+}
+
+// ====== Config Panel ======
+function toggleConfig() { document.getElementById('configPanel').classList.toggle('collapsed'); }
+
+function switchModelTab(type) {
+  document.querySelectorAll('.tabs .tab').forEach((t, i) => { t.classList.toggle('active', ['text','image','video'][i] === type); });
+  document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+  document.getElementById(`tab-${type}`).classList.add('active');
+}
+
+function togglePassword(inputId, btn) {
+  const input = document.getElementById(inputId);
+  input.type = input.type === 'password' ? 'text' : 'password';
+  btn.textContent = input.type === 'password' ? '👁️' : '🙈';
+}
+
+// ====== Model Config ======
+const editingModelId = { text: null, image: null, video: null };
+
+function saveModelConfig(type) {
+  const name = document.getElementById(`${type}ModelName`).value.trim();
+  const key = document.getElementById(`${type}ApiKey`).value.trim();
+  const url = document.getElementById(`${type}BaseUrl`).value.trim();
+  if (!name) { showToast('请输入模型名称', 'error'); return; }
+  if (editingModelId[type]) {
+    const model = state.models[type].find(m => m.id === editingModelId[type]);
+    if (model) { model.name = name; model.key = key; model.url = url; state.selectedModels[type] = model.id; }
+    editingModelId[type] = null;
+  } else {
+    const model = { id: Date.now().toString(36), name, key, url, createdAt: new Date().toISOString() };
+    state.models[type].push(model);
+    state.selectedModels[type] = model.id;
+  }
+  saveState(); renderModelLists();
+  showToast(`已保存 ${name} 模型配置`, 'success');
+  document.getElementById(`${type}ModelName`).value = '';
+  document.getElementById(`${type}ApiKey`).value = '';
+  document.getElementById(`${type}BaseUrl`).value = '';
+}
+
+function resetModelConfig(type) {
+  editingModelId[type] = null;
+  document.getElementById(`${type}ModelName`).value = '';
+  document.getElementById(`${type}ApiKey`).value = '';
+  document.getElementById(`${type}BaseUrl`).value = '';
+  showToast('已重置输入', 'info');
+}
+
+function selectModel(type, id) { state.selectedModels[type] = id; saveState(); renderModelLists(); showToast('已切换模型', 'success'); }
+
+function deleteModel(type, id) {
+  state.models[type] = state.models[type].filter(m => m.id !== id);
+  if (state.selectedModels[type] === id) state.selectedModels[type] = state.models[type].length > 0 ? state.models[type][0].id : null;
+  saveState(); renderModelLists(); showToast('已删除模型', 'info');
+}
+
+function editModel(type, id) {
+  const model = state.models[type].find(m => m.id === id);
+  if (!model) return;
+  editingModelId[type] = id;
+  document.getElementById(`${type}ModelName`).value = model.name;
+  document.getElementById(`${type}ApiKey`).value = model.key;
+  document.getElementById(`${type}BaseUrl`).value = model.url;
+  showToast('正在编辑模型，点击保存以更新配置', 'info');
+}
+
+async function testConnection(type) {
+  const selectedId = state.selectedModels[type];
+  let model = state.models[type].find(m => m.id === selectedId);
+  if (!model) {
+    const key = document.getElementById(`${type}ApiKey`).value.trim();
+    const url = document.getElementById(`${type}BaseUrl`).value.trim();
+    if (!key || !url) { showToast('请先选择或输入模型配置', 'error'); return; }
+    model = { name: 'test', key, url };
+  }
+  showToast('正在测试连接...', 'info');
+  try {
+    let resp = await fetchWithTimeout(`${model.url}/models`, { headers: { 'Authorization': `Bearer ${model.key}` } });
+    if (resp.status === 404 || resp.status === 405) {
+      // 网关不实现 /models 时，回退探测根路径
+      resp = await fetchWithTimeout(model.url, { headers: { 'Authorization': `Bearer ${model.key}` } });
+      if (resp.status < 500) { showToast(`✅ ${model.name} 连接成功（网关不支持 /models 探测）`, 'success'); return; }
+    }
+    if (resp.ok) showToast(`✅ ${model.name} 连接成功！`, 'success');
+    else showToast(`❌ 连接失败 (${resp.status})`, 'error');
+  } catch(e) { showToast('❌ 网络连接失败: ' + e.message, 'error'); }
+}
+
+function maskKey(key) { if (!key || key.length < 8) return '***'; return key.substring(0, 4) + '****' + key.substring(key.length - 4); }
+
+function renderModelLists() {
+  ['text', 'image', 'video'].forEach(type => {
+    const container = document.getElementById(`${type}ModelList`);
+    if (!container) return;
+    const models = state.models[type];
+    if (models.length === 0) { container.innerHTML = '<div style="font-size:12px;color:var(--text-dim);padding:8px;">暂无已保存的模型配置</div>'; return; }
+    container.innerHTML = models.map(m => `
+      <div class="model-item ${state.selectedModels[type] === m.id ? 'selected' : ''}" onclick="selectModel('${type}','${m.id}')">
+        <span class="status-dot ${state.selectedModels[type] === m.id ? 'connected' : 'unknown'}"></span>
+        <span class="model-name">${escapeHtml(m.name)}</span>
+        <span class="model-url">${maskKey(m.key)}</span>
+        <div class="model-actions">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editModel('${type}','${m.id}')" title="编辑">✏️</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteModel('${type}','${m.id}')" title="删除">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  });
+}
+
+// ====== File Upload ======
+const fileDrop = document.getElementById('fileDrop');
+const fileInput = document.getElementById('fileInput');
+fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('dragover'); });
+fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('dragover'));
+fileDrop.addEventListener('drop', e => { e.preventDefault(); fileDrop.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+function renderFilePreview() {
+  const preview = document.getElementById('filePreview');
+  preview.innerHTML = state.uploadedFiles.map((f, i) => `
+    <div style="position:relative;width:60px;height:60px;border-radius:6px;overflow:hidden;">
+      <img src="${f.data}" style="width:100%;height:100%;object-fit:cover;" alt="参考图片 ${escapeHtml(f.name)}">
+      <button onclick="removeUploadedFile(${i})" title="移除" style="position:absolute;top:0;right:0;background:rgba(0,0,0,0.6);color:white;border:none;width:16px;height:16px;font-size:10px;cursor:pointer;border-radius:0 0 0 6px;">✕</button>
+    </div>`).join('');
+}
+
+function removeUploadedFile(index) {
+  state.uploadedFiles.splice(index, 1);
+  renderFilePreview();
+}
+
+function handleFiles(files) {
+  Array.from(files).forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      state.uploadedFiles.push({ name: file.name, data: e.target.result });
+      renderFilePreview();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ====== Tooltip & Menu ======
+document.addEventListener('click', e => {
+  const icon = e.target.closest('.tooltip-icon');
+  if (icon) { e.stopPropagation(); const wrap = icon.closest('.tooltip-wrap'); document.querySelectorAll('.tooltip-wrap.active').forEach(w => { if (w !== wrap) w.classList.remove('active'); }); wrap.classList.toggle('active'); return; }
+  document.querySelectorAll('.tooltip-wrap.active').forEach(w => w.classList.remove('active'));
+});
+
+function toggleExportMenu() { document.getElementById('exportMenu').classList.toggle('active'); }
+document.addEventListener('click', e => { if (!e.target.closest('.export-dropdown')) document.getElementById('exportMenu').classList.remove('active'); });
+
+function showHelpModal() { document.getElementById('helpModal').classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+document.querySelectorAll('.modal-overlay').forEach(overlay => { overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('active'); }); });
+
+// ====== Storyboard ======
+const defaultShots = Array.from({ length: 9 }, (_, i) => ({
+  id: i + 1,
+  timecode: `${String(Math.floor(i * 7 / 60)).padStart(2,'0')}:${String((i*7)%60).padStart(2,'0')} - ${String(Math.floor((i+1)*7/60)).padStart(2,'0')}:${String(((i+1)*7)%60).padStart(2,'0')}`,
+  description: '', startFrame: '', endFrame: '', camera: '', dialogue: '', sound: '', prompt: '', image: null, video: null, videoStatus: null
+}));
+
+function commitPendingEdits() {
+  const grid = document.getElementById('storyboardGrid');
+  if (!grid || state.storyboard.length === 0) return;
+  grid.querySelectorAll('textarea, input').forEach(el => {
+    const m = (el.getAttribute('onchange') || '').match(/updateShot\((\d+),'(\w+)',this\.value\)/);
+    if (!m) return;
+    const idx = parseInt(m[1]), field = m[2];
+    if (state.storyboard[idx] && state.storyboard[idx][field] !== el.value) state.storyboard[idx][field] = el.value;
+  });
+}
+
+function renderStoryboard() {
+  commitPendingEdits();
+  const grid = document.getElementById('storyboardGrid');
+  const shots = state.storyboard.length > 0 ? state.storyboard : defaultShots;
+
+  grid.innerHTML = shots.map((shot, i) => `
+    <div class="storyboard-cell fade-in" style="animation-delay:${i*0.05}s">
+      <span class="cell-number">${shot.id}</span>
+      <div class="cell-image-area" onclick="editShot(${i})" title="点击编辑分镜">
+        ${shot.video ? `<video src="${escapeHtml(shot.video)}" controls muted loop style="width:100%;height:100%;object-fit:cover;border-radius:6px;"></video>` :
+          shot.image ? `<img src="${escapeHtml(shot.image)}" alt="分镜 ${shot.id} 画面">` : `
+          <div class="placeholder"><div style="font-size:24px;margin-bottom:4px;">🎬</div><div>分镜 ${shot.id}</div><div style="font-size:10px;margin-top:2px;">点击编辑</div></div>`}
+      </div>
+      <div class="cell-meta">
+        <span><span class="label">⏱️</span> <input type="text" value="${escapeHtml(shot.timecode||'')}" onchange="updateShot(${i},'timecode',this.value)" style="background:transparent;border:none;color:var(--text-dim);font-size:11px;width:100%;font-family:inherit;" placeholder="00:00 - 00:07"></span>
+        <span><span class="label">📷</span> <input type="text" value="${escapeHtml(shot.camera||'')}" onchange="updateShot(${i},'camera',this.value)" style="background:transparent;border:none;color:var(--accent-light);font-size:11px;width:100%;font-family:inherit;" placeholder="运镜方式"></span>
+        <textarea rows="2" onchange="updateShot(${i},'description',this.value)" placeholder="画面描述...">${escapeHtml(shot.description||'')}</textarea>
+        <span style="color:var(--warning);font-size:10px;">💬 <input type="text" value="${escapeHtml(shot.dialogue||'')}" onchange="updateShot(${i},'dialogue',this.value)" style="background:transparent;border:none;color:var(--warning);font-size:10px;width:100%;font-family:inherit;" placeholder="台词/旁白"></span>
+        <span style="color:var(--text-dim);font-size:10px;">🔊 <input type="text" value="${escapeHtml(shot.sound||'')}" onchange="updateShot(${i},'sound',this.value)" style="background:transparent;border:none;color:var(--text-dim);font-size:10px;width:100%;font-family:inherit;" placeholder="声音设计"></span>
+        ${shot.videoStatus ? `<div class="cell-video-status ${shot.videoStatus}">${shot.videoStatus === 'generating' ? '⏳ 视频生成中...' : shot.videoStatus === 'done' ? '✅ 视频已生成' : '❌ 视频生成失败'}</div>` : ''}
+        <div class="cell-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editShot(${i})" style="font-size:10px;">✏️ 编辑</button>
+          <button class="btn btn-ghost btn-sm" onclick="generateShotImage(${i})" style="font-size:10px;">🖼️ 生图</button>
+          <button class="btn btn-video btn-sm" onclick="generateShotVideo(${i})" style="font-size:10px;">🎥 生视频</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateShot(index, field, value) {
+  if (state.storyboard.length === 0) state.storyboard = [...defaultShots];
+  state.storyboard[index][field] = value;
+  saveState();
+}
+
+function editShot(index) {
+  const shots = state.storyboard.length > 0 ? state.storyboard : defaultShots;
+  const shot = shots[index];
+  document.getElementById('editShotNum').value = `分镜 ${shot.id}`;
+  document.getElementById('editDescription').value = shot.description;
+  document.getElementById('editCamera').value = shot.camera;
+  document.getElementById('editDialogue').value = shot.dialogue;
+  document.getElementById('editSound').value = shot.sound;
+  document.getElementById('editTimecode').value = shot.timecode;
+  document.getElementById('editPrompt').value = shot.prompt;
+  document.getElementById('promptModal').dataset.index = index;
+  document.getElementById('promptModal').classList.add('active');
+}
+
+function saveShotEdit() {
+  const index = parseInt(document.getElementById('promptModal').dataset.index);
+  if (state.storyboard.length === 0) state.storyboard = [...defaultShots];
+  state.storyboard[index].description = document.getElementById('editDescription').value;
+  state.storyboard[index].camera = document.getElementById('editCamera').value;
+  state.storyboard[index].dialogue = document.getElementById('editDialogue').value;
+  state.storyboard[index].sound = document.getElementById('editSound').value;
+  state.storyboard[index].timecode = document.getElementById('editTimecode').value;
+  state.storyboard[index].prompt = document.getElementById('editPrompt').value;
+  saveState();
+  closeModal('promptModal');
+  renderStoryboard();
+  showToast('分镜已更新', 'success');
+}
+
+function clearStoryboard() {
+  state.storyboard = [];
+  saveState();
+  renderStoryboard();
+  document.getElementById('promptOutput').style.display = 'none';
+  showToast('已清空故事板', 'info');
+}
+
+// ====== Enhanced AI Prompt for Rich Story Generation ======
+async function generateStoryboard() {
+  const story = document.getElementById('storyInput').value.trim();
+  if (!story) { showToast('请输入故事描述', 'error'); return; }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> AI 生成中...';
+
+  const specType = document.getElementById('specType').value;
+  const specRatio = document.getElementById('specRatio').value;
+  const specDuration = document.getElementById('specDuration').value;
+  const specStyle = document.getElementById('specStyle').value;
+  const specColor = document.getElementById('specColor').value;
+  const extra = document.getElementById('extraRequirements').value;
+
+  const textModel = state.models.text.find(m => m.id === state.selectedModels.text);
+
+  // Enhanced system prompt for rich story generation
+  const systemPrompt = `你是一位顶级的电影分镜师、视觉叙事导演和编剧。你的任务是根据用户提供的故事内容，创作一个完整的、有深度的3×3（9个镜头）电影故事板。
+
+## 叙事要求（最重要）
+
+**⚠️ 核心原则：所有内容必须严格根据用户输入或上传的内容生成，不得使用固定模板内容，不得胡编乱造。用户输入的内容是唯一的故事素材来源，故事需要有紧凑连贯的故事情节、细腻的人物环境和画面刻画。参考流行的视频故事、电影故事和短剧的故事生成原则和过程。每个分镜镜头间需要能串联起来而不生硬。画面的人物、场景、道具、服饰一致性需要在每个分镜镜头中强行约束指定。分镜画面中不要出现汉字、字母、字幕和模糊符号。旁白语句需要在提示词中明确使用引号"“”"进行标识以便AI生成视频能够理解并引用。**
+
+你必须将用户的创意扩展为一个完整的故事弧线，包含：
+
+1. **开场建立**（镜头1-2）：建立世界观、主角状态、环境氛围。用视觉语言交代背景，不是简单描述。
+2. **冲突发展**（镜头3-5）：引入核心冲突/挑战/转折。展现主角面临的困境、内心挣扎或外部威胁。每个镜头推动情节前进。
+3. **高潮转折**（镜头6-7）：故事的情感或戏剧高潮。关键决定、真相揭露、对决或顿悟时刻。
+4. **结局收束**（镜头8-9）：冲突解决、情感升华、余韵留白。给观众留下思考空间。
+
+## 每个镜头必须包含
+
+- **具体的人物动作和表情**，不是泛泛的"一个人站在那里"
+- **有情感张力的台词或旁白**，推动叙事而非说明性文字
+- **有层次的声音设计**，配合画面情绪变化
+- **精确的摄影语言**，包含景别、运镜、光线方向、构图方式
+
+## JSON格式要求
+
+每个镜头包含：
+- id: 镜头编号(1-9)
+- timecode: 时间码（格式：MM:SS - MM:SS，根据总时长合理分配）
+- startFrame: 起始画面描述（中文，具体到人物姿态、表情、环境细节）
+- endFrame: 结束画面描述（中文，画面如何过渡到下一镜）
+- description: 画面描述（中文，包含景别、构图、人物动作、光线、氛围，至少50字）
+- camera: 运镜方式（具体描述，如"从低角度缓慢推进，镜头微微仰起"而非简单的"推"）
+- dialogue: 台词或旁白（有意义的、推动情节的台词，如无则为空字符串）
+- sound: 声音设计（分层描述：环境底噪 + 关键音效 + 配乐情绪，如"寂静的城市废墟中，远处传来金属碰撞的回响，低频电子合成器营造孤独感"）
+- prompt: 英文画面提示词（详细的专业摄影描述，包含光线、色调、构图、镜头参数、氛围关键词，至少80词，可直接用于Midjourney/DALL-E）
+
+项目规格：
+- 影片类型：${specType}
+- 画面比例：${specRatio}
+- 总时长：${specDuration}
+- 画面风格：${specStyle}
+- 色调：${specColor}
+${extra ? `- 额外要求：${extra}` : ''}
+
+请以纯JSON数组格式返回，不要包含markdown代码块标记。每个镜头的description和prompt字段必须详细充实，不能是泛泛的描述。`;
+
+  try {
+    if (textModel && textModel.key && textModel.url) {
+      const response = await fetchWithTimeout(`${textModel.url}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${textModel.key}` },
+        body: JSON.stringify({
+          model: textModel.name,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: state.uploadedFiles.length > 0 ? [
+              { type: 'text', text: `请根据以下故事创意，创作一个完整的、有深度的电影故事板。要求展开完整情节，有起承转合，不能泛泛而谈：\n\n${story}` },
+              ...state.uploadedFiles.map(f => ({ type: 'image_url', image_url: { url: f.data } }))
+            ] : `请根据以下故事创意，创作一个完整的、有深度的电影故事板。要求展开完整情节，有起承转合，不能泛泛而谈：\n\n${story}` }
+          ],
+          temperature: 0.85,
+          max_tokens: 6000
+        })
+      }, 90000);
+
+      if (!response.ok) throw new Error(`API调用失败: ${response.status}`);
+
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+
+      let shots;
+      try {
+        const cleaned = content.replace(/```json?\s*/g, '').replace(/```/g, '').trim();
+        shots = JSON.parse(cleaned);
+      } catch(e) {
+        const match = content.match(/\[[\s\S]*\]/);
+        if (match) shots = JSON.parse(match[0]);
+        else throw new Error('无法解析AI返回的数据');
+      }
+
+      // Ensure video field exists
+      shots = shots.map(s => ({ ...s, video: null, videoStatus: null }));
+      state.storyboard = shots;
+    } else {
+      showToast('未配置AI模型，使用本地演示模式', 'info');
+      await new Promise(r => setTimeout(r, 1500));
+      const demoRatio = document.getElementById('specRatio').value;
+      state.storyboard = generateDemoShots(story, specType, specStyle, specColor, demoRatio);
+    }
+
+    renderStoryboard();
+    updatePromptOutput();
+    updateTimeline();
+    showToast('✨ 故事板生成成功！', 'success');
+  } catch(e) {
+    showToast('生成失败: ' + e.message, 'error');
+    state.storyboard = generateDemoShots(story, specType, specStyle, specColor, specRatio);
+    renderStoryboard();
+    updatePromptOutput();
+    updateTimeline();
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span>✨</span> AI 生成故事板';
+}
+
+function updateTimeline() {
+  const specDuration = document.getElementById('specDuration').value;
+  const durMap = {'15s':'00:15','30s':'00:30','60s':'01:00','2min':'02:00','5min':'05:00','10min':'10:00'};
+  document.getElementById('totalTimeDisplay').textContent = '00:00 - ' + (durMap[specDuration] || '01:00');
+  const colors = ['#6c5ce7','#00cec9','#fd79a8','#fdcb6e','#00b894','#e17055','#6c5ce7','#00cec9','#fd79a8'];
+  const bar = document.getElementById('timelineBar');
+  bar.innerHTML = state.storyboard.map((_, i) => `<div style="flex:1;background:${colors[i % colors.length]};border-radius:3px;"></div>`).join('');
+}
+
+function generateDemoShots(story, type, style, color, ratio) {
+  // Extract key elements from user input for story-driven content
+  const storyLen = story.length;
+  // Parse user story to extract key nouns, actions, and setting
+  const storyLines = story.split(/[。！？.!?\n]/).filter(s => s.trim().length > 0);
+  const firstLine = storyLines[0] || story.substring(0, 60);
+  const lastLine = storyLines[storyLines.length - 1] || story.substring(Math.max(0, storyLen - 60));
+  const midLines = storyLines.slice(1, -1);
+
+  // Extract setting/characters from story
+  const settingMatch = story.match(/在([^，。,\.]+?)(?:中|里|上|下|旁)/);
+  const setting = settingMatch ? settingMatch[1] : '';
+  const charMatch = story.match(/(?:一位?|一个|两名?|几位?)([^，。,\.]+)/);
+  const character = charMatch ? charMatch[1] : '主角';
+
+  // Derive style-appropriate elements
+  const isDark = color.includes('暗') || color.includes('冷') || style.includes('暗黑');
+  const isWarm = color.includes('暖') || style.includes('清新');
+  const isCyber = style.includes('赛博') || style.includes('霓虹');
+
+  const cameraTypes = [
+    '从黑暗中缓缓推入，镜头低角度仰起，营造压迫感',
+    '水平摇镜缓慢扫过全景，建立空间关系',
+    '手持跟拍，轻微晃动增加真实感和紧迫感',
+    '斯坦尼康环绕运动，360度展现环境',
+    '航拍垂直下降，从上帝视角逐渐贴近人物',
+    '手持肩扛，快速推进至面部特写，捕捉情绪',
+    '固定机位，浅景深虚化背景，聚焦主体',
+    '轨道缓慢拉出，逐步揭示完整环境',
+    '固定远景长镜头，人物在画面中渐行渐远'
+  ];
+  const shotTypes = ['大远景(ELS)', '远景(LS)', '全景(FS)', '中景(MS)', '中近景(MCU)', '近景(CU)', '特写(ECU)', '大特写(BCU)', '过肩(OTS)'];
+
+  // Build story beats derived from user input
+  const storyBeats = [
+    {
+      desc: `[${shotTypes[0]}] ${firstLine}。镜头以大全景开场，${setting ? '展现' + setting + '的全貌' : '建立故事发生的环境'}。${isDark ? '低沉的天光笼罩一切' : isCyber ? '霓虹灯光在湿润的街道上反射' : '自然光线柔和地铺洒'}，画面色调${color}。`,
+      dialogue: '',
+      sound: `${isDark ? '低沉的环境底噪，远处传来不明声响' : isCyber ? '电子合成器低频脉冲，城市白噪音' : '自然环境音，风声与远处的动静'}，配乐以单一乐器引入，奠定情绪基调`
+    },
+    {
+      desc: `[${shotTypes[1]}] ${character}${setting ? '在' + setting + '中' : ''}登场。${midLines[0] || '人物的状态和处境通过动作细节交代'}。镜头从全景过渡到中景，展现人物与环境的关系。${style}风格的画面质感在此确立。`,
+      dialogue: story.match(/['"]([^'"]+)['"]/) ? story.match(/['"]([^'"]+)['"]/)[1] : '（内心独白）',
+      sound: '环境音层次丰富，配乐渐入，与人物情绪同步'
+    },
+    {
+      desc: `[${shotTypes[2]}] ${midLines[1] || '情节推进，人物开始行动'}。镜头跟拍人物移动，${isDark ? '阴影中的细节若隐若现' : '环境中的物件和线索逐步展现'}。构图注重空间纵深感。`,
+      dialogue: '',
+      sound: '脚步声、动作音效清晰可闻，配乐节奏微微加快'
+    },
+    {
+      desc: `[${shotTypes[3]}] ${midLines[2] || '关键转折出现'}。${character}面对新的发现或挑战，面部表情从${isDark ? '警觉' : '平静'}转为${isDark ? '震惊' : '专注'}。镜头捕捉人物与关键物件/事件的互动。`,
+      dialogue: '',
+      sound: '配乐突然变化，关键音效强调转折瞬间'
+    },
+    {
+      desc: `[${shotTypes[4]}] ${midLines[3] || '冲突升级，人物做出选择'}。${character}的行动加快，${setting ? '在' + setting + '中' : ''}做出关键决定。${isCyber ? '数据流与光效交织' : '光影对比加剧'}，画面张力提升。`,
+      dialogue: '',
+      sound: '节奏明显加快，鼓点或脉冲音效加入，紧张感递增'
+    },
+    {
+      desc: `[${shotTypes[5]}] 情感高潮。${character}的内心世界通过面部特写展现——眼中${isDark ? '映射着挣扎与决绝' : '闪烁着复杂的情绪'}。${isWarm ? '温暖的光线恰好照亮面部' : '戏剧性的明暗分割面部'}。`,
+      dialogue: '',
+      sound: '环境音压低至几乎寂静，只剩心跳与呼吸，配乐达到情感峰值'
+    },
+    {
+      desc: `[${shotTypes[6]}] 极致特写——${isDark ? '紧握的拳头/颤抖的指尖/瞳孔中的倒影' : '微笑的嘴角/滑落的泪珠/微风吹动的发丝'}。用微小的视觉细节承载巨大的情感重量。${color}色调在此刻达到最浓。`,
+      dialogue: '',
+      sound: '近乎绝对的寂静，细微的环境底噪如同呼吸'
+    },
+    {
+      desc: `[${shotTypes[7]}] ${midLines[midLines.length - 1] || '故事走向结局'}。镜头缓缓拉出，${setting ? '从' + setting + '的全貌中看到变化' : '揭示最终的结果与改变'}。画面从紧凑走向开阔。`,
+      dialogue: '',
+      sound: `配乐渐强，加入完整编制，${isDark ? '沉重但有力量' : '温暖而充满希望'}`
+    },
+    {
+      desc: `[${shotTypes[8]}] ${lastLine}。${character}的身影${isDark ? '消失在暗色中' : '融入光亮里'}，画面在${isDark ? '深沉的暮色' : '柔和的光线'}中缓缓淡出，留下余韵。`,
+      dialogue: '',
+      sound: '配乐缓缓收束，最后一个音符在寂静中回荡，余韵悠长'
+    }
+  ];
+
+  // Build English prompts derived from user story content
+  function buildPrompt(shotType, i) {
+    const styleEn = style === '电影写实' ? 'photorealistic cinematic' : style === '赛博朋克' ? 'cyberpunk neon-lit' : style === '清新自然' ? 'soft natural light pastoral' : style === '暗黑哥特' ? 'dark gothic moody' : style === '复古胶片' ? 'vintage film grain nostalgic' : style === '动漫风格' ? 'anime cel-shaded vibrant' : 'cinematic';
+    const colorEn = color === '暖色调' ? 'warm amber tones' : color === '冷色调' ? 'cool blue steel tones' : color === '低饱和' ? 'desaturated muted palette' : color === '高对比' ? 'high contrast dramatic' : color === '霓虹色' ? 'neon saturated glow' : 'balanced color grading';
+    const settingEn = setting ? setting.replace(/[^\u4e00-\u9fa5a-zA-Z0-9 ]/g, '').trim() : 'dramatic environment';
+    const charEn = character.replace(/[^\u4e00-\u9fa5a-zA-Z0-9 ]/g, '').trim() || 'protagonist';
+    const storyContext = story.substring(0, 80).replace(/["'<>]/g, '');
+
+    return `${styleEn} ${shotType} shot, ${colorEn} color grading, scene depicting: ${storyContext}, character: ${charEn} in ${settingEn}, professional cinematography with anamorphic lens, film grain texture, dramatic lighting with volumetric rays, shallow depth of field, emotional storytelling, high-end commercial production quality, Arri Alexa camera look, 35mm film emulation --ar ${ratio === '2.35:1' ? '239:100' : ratio} --style raw --v 6 --q 2`;
+  }
+
+  return Array.from({ length: 9 }, (_, i) => ({
+    id: i + 1,
+    timecode: `${String(Math.floor(i * 7 / 60)).padStart(2,'0')}:${String((i*7)%60).padStart(2,'0')} - ${String(Math.floor((i+1)*7/60)).padStart(2,'0')}:${String(((i+1)*7)%60).padStart(2,'0')}`,
+    startFrame: `镜头${i+1}起始：${shotTypes[i]}画面开始`,
+    endFrame: `镜头${i+1}结束：画面过渡至下一镜`,
+    description: storyBeats[i].desc,
+    camera: cameraTypes[i],
+    dialogue: storyBeats[i].dialogue,
+    sound: storyBeats[i].sound,
+    prompt: buildPrompt(shotTypes[i], i),
+    image: null,
+    video: null,
+    videoStatus: null
+  }));
+}
+
+function updatePromptOutput() {
+  const output = document.getElementById('promptOutput');
+  const content = document.getElementById('promptContent');
+  if (state.storyboard.length === 0) { output.style.display = 'none'; return; }
+  output.style.display = 'block';
+  const fullText = state.storyboard.map(s =>
+    `=== 镜头 ${s.id} (${s.timecode}) ===\n📷 运镜: ${s.camera}\n🎬 画面: ${s.description}\n💬 台词: ${s.dialogue || '(无)'}\n🔊 声音: ${s.sound}\n\n🖼️ Prompt:\n${s.prompt}\n`
+  ).join('\n');
+  content.textContent = fullText;
+  // Reset edit mode
+  document.getElementById('promptEditArea').style.display = 'none';
+  document.getElementById('promptContent').style.display = 'block';
+  document.getElementById('promptEditBtn').style.display = '';
+  document.getElementById('promptSubmitBtn').style.display = 'none';
+  document.getElementById('promptCancelBtn').style.display = 'none';
+}
+
+// ====== Prompt Edit Functions ======
+function togglePromptEdit() {
+  const content = document.getElementById('promptContent');
+  const editArea = document.getElementById('promptEditArea');
+  editArea.value = content.textContent;
+  content.style.display = 'none';
+  editArea.style.display = 'block';
+  editArea.focus();
+  document.getElementById('promptEditBtn').style.display = 'none';
+  document.getElementById('promptSubmitBtn').style.display = '';
+  document.getElementById('promptCancelBtn').style.display = '';
+}
+
+function cancelPromptEdit() {
+  document.getElementById('promptEditArea').style.display = 'none';
+  document.getElementById('promptContent').style.display = 'block';
+  document.getElementById('promptEditBtn').style.display = '';
+  document.getElementById('promptSubmitBtn').style.display = 'none';
+  document.getElementById('promptCancelBtn').style.display = 'none';
+}
+
+function submitPromptEdit() {
+  const editArea = document.getElementById('promptEditArea');
+  const editedText = editArea.value;
+  // Parse the edited text back into storyboard shots
+  // Split by shot separator pattern
+  const shotBlocks = editedText.split(/===\s*镜头\s+(\d+)/);
+  // shotBlocks[0] is empty, then alternating: id, content
+  for (let i = 1; i < shotBlocks.length; i += 2) {
+    const shotId = parseInt(shotBlocks[i]);
+    const block = shotBlocks[i + 1] || '';
+    const idx = shotId - 1;
+    if (idx < 0 || idx >= state.storyboard.length) continue;
+    // Extract fields using regex
+    const cameraMatch = block.match(/📷 运镜:\s*(.+?)(?:\n|$)/);
+    const descMatch = block.match(/🎬 画面:\s*([\s\S]+?)(?=\n💬|$)/);
+    const dialogueMatch = block.match(/💬 台词:\s*(.+?)(?:\n|$)/);
+    const soundMatch = block.match(/🔊 声音:\s*(.+?)(?:\n|$)/);
+    const promptMatch = block.match(/🖼️ Prompt:\s*([\s\S]+?)$/);
+    const timecodeMatch = block.match(/\((\d{2}:\d{2}\s*-\s*\d{2}:\d{2})\)/);
+
+    if (cameraMatch) state.storyboard[idx].camera = cameraMatch[1].trim();
+    if (descMatch) state.storyboard[idx].description = descMatch[1].trim();
+    if (dialogueMatch) {
+      const d = dialogueMatch[1].trim();
+      state.storyboard[idx].dialogue = d === '(无)' ? '' : d;
+    }
+    if (soundMatch) state.storyboard[idx].sound = soundMatch[1].trim();
+    if (promptMatch) state.storyboard[idx].prompt = promptMatch[1].trim();
+    if (timecodeMatch) state.storyboard[idx].timecode = timecodeMatch[1].trim();
+  }
+  renderStoryboard();
+  updatePromptOutput();
+  showToast('✅ 画面提示词已更新，分镜详情已同步', 'success');
+}
+
+// ====== Batch Generation ======
+let batchRunning = false;
+let batchCancelRequested = false;
+
+function requestBatchCancel() {
+  if (!batchRunning) return;
+  batchCancelRequested = true;
+  showToast('已请求取消，将在当前分镜完成后停止', 'warning');
+}
+
+function setCancelBtnVisible(visible) {
+  const btn = document.getElementById('cancelBatchBtn');
+  if (btn) btn.style.display = visible ? 'inline-flex' : 'none';
+}
+
+async function batchGenerateImages() {
+  if (state.storyboard.length === 0) { showToast('请先生成故事板', 'error'); return; }
+  const imageModel = state.models.image.find(m => m.id === state.selectedModels.image);
+  if (!imageModel || !imageModel.key) { showToast('请先配置图片生成模型', 'error'); return; }
+  if (batchRunning) { showToast('已有批量任务在执行中', 'warning'); return; }
+  batchRunning = true;
+  batchCancelRequested = false;
+  setCancelBtnVisible(true);
+  const btn = document.getElementById('batchImgBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 批量生图中...';
+  const total = state.storyboard.filter(s => s.prompt).length;
+  let successCount = 0;
+  for (let i = 0; i < state.storyboard.length; i++) {
+    if (batchCancelRequested) { showToast('批量生图已取消', 'warning'); break; }
+    if (!state.storyboard[i].prompt) continue;
+    showToast(`🖼️ 正在生成分镜 ${i + 1} 的图片 (${successCount + 1}/${total})...`, 'info');
+    try {
+      await generateShotImage(i);
+      if (state.storyboard[i].image) { successCount++; }
+      else { showToast(`分镜 ${i + 1} 图片生成失败，跳过`, 'error'); }
+    } catch(e) {
+      showToast(`分镜 ${i + 1} 图片生成失败，跳过`, 'error');
+    }
+    // Small delay between requests
+    if (i < state.storyboard.length - 1) await new Promise(r => setTimeout(r, 1000));
+  }
+  batchRunning = false;
+  batchCancelRequested = false;
+  setCancelBtnVisible(false);
+  btn.disabled = false;
+  btn.innerHTML = '<span>🖼️</span> 批量生图';
+  saveState();
+  showToast(`✅ 批量生图完成！成功 ${successCount}/${total}`, batchCancelRequested ? 'warning' : 'success');
+}
+
+async function batchGenerateVideos() {
+  if (state.storyboard.length === 0) { showToast('请先生成故事板', 'error'); return; }
+  const videoModel = state.models.video.find(m => m.id === state.selectedModels.video);
+  if (!videoModel || !videoModel.key) { showToast('请先配置视频大模型API', 'error'); return; }
+  if (batchRunning) { showToast('已有批量任务在执行中', 'warning'); return; }
+  batchRunning = true;
+  batchCancelRequested = false;
+  setCancelBtnVisible(true);
+  const btn = document.getElementById('batchVidBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 批量生视频中...';
+
+  // First ensure all images are generated
+  const imageModel = state.models.image.find(m => m.id === state.selectedModels.image);
+  const shotsNeedingImages = state.storyboard.filter(s => s.prompt && !s.image).length;
+  if (shotsNeedingImages > 0 && imageModel && imageModel.key) {
+    showToast(`🖼️ 先批量生成 ${shotsNeedingImages} 张缺失的分镜图片...`, 'info');
+    for (let i = 0; i < state.storyboard.length; i++) {
+      if (state.storyboard[i].prompt && !state.storyboard[i].image) {
+        try { await generateShotImage(i); } catch(e) {}
+        if (i < state.storyboard.length - 1) await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+  }
+
+  let successCount = 0;
+  let skipCount = 0;
+  for (let i = 0; i < state.storyboard.length; i++) {
+    if (!state.storyboard[i].prompt) continue;
+    // Skip if already has video
+    if (state.storyboard[i].video) { successCount++; continue; }
+
+    let videoSuccess = false;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      showToast(`🎥 分镜 ${i + 1} 视频生成中... (尝试 ${attempt}/2)`, 'info');
+      try {
+        await generateShotVideo(i);
+        if (state.storyboard[i].video) { videoSuccess = true; successCount++; break; }
+      } catch(e) {
+        showToast(`分镜 ${i + 1} 第 ${attempt} 次尝试失败`, 'error');
+      }
+    }
+    if (!videoSuccess) {
+      skipCount++;
+      showToast(`⚠️ 分镜 ${i + 1} 视频2次均失败，跳过`, 'warning');
+    }
+    // Delay between videos
+    if (i < state.storyboard.length - 1) await new Promise(r => setTimeout(r, 2000));
+  }
+  batchRunning = false;
+  batchCancelRequested = false;
+  setCancelBtnVisible(false);
+  btn.disabled = false;
+  btn.innerHTML = '<span>🎥</span> 批量生视频';
+  saveState();
+  showToast(`✅ 批量视频完成！成功 ${successCount}，跳过 ${skipCount}`, 'success');
+}
+
+// ====== Export URL Functions ======
+function exportVideoURLs() {
+  if (state.storyboard.length === 0) { showToast('请先生成故事板', 'error'); return; }
+  const shotsWithVideo = state.storyboard.filter(s => s.video && s.video.startsWith('http'));
+  if (shotsWithVideo.length === 0) { showToast('没有已生成的视频URL，请先生成视频', 'error'); return; }
+  let txt = `# 故事板视频URL地址\n# 生成时间: ${new Date().toLocaleString()}\n# 共 ${shotsWithVideo.length} 个视频\n\n`;
+  shotsWithVideo.forEach(s => {
+    txt += `分镜${s.id} (${s.timecode}): ${s.video}\n`;
+  });
+  downloadFile('storyboard_video_urls.txt', txt, 'text/plain');
+  showToast(`已导出 ${shotsWithVideo.length} 个视频URL`, 'success');
+}
+
+function exportImageURLs() {
+  if (state.storyboard.length === 0) { showToast('请先生成故事板', 'error'); return; }
+  const shotsWithImage = state.storyboard.filter(s => s.image && s.image.startsWith('http'));
+  if (shotsWithImage.length === 0) { showToast('没有已生成的图片URL，请先生成分镜图片', 'error'); return; }
+  let txt = `# 故事板分镜图片URL地址\n# 生成时间: ${new Date().toLocaleString()}\n# 共 ${shotsWithImage.length} 张图片\n\n`;
+  shotsWithImage.forEach(s => {
+    txt += `分镜${s.id} (${s.timecode}): ${s.image}\n`;
+  });
+  downloadFile('storyboard_image_urls.txt', txt, 'text/plain');
+  showToast(`已导出 ${shotsWithImage.length} 个图片URL`, 'success');
+}
+
+// ====== Image Generation ======
+async function generateShotImage(index) {
+  const shot = state.storyboard[index];
+  if (!shot || !shot.prompt) { showToast('请先生成故事板内容', 'error'); return; }
+
+  const imageModel = state.models.image.find(m => m.id === state.selectedModels.image);
+  if (!imageModel || !imageModel.key) { showToast('请先配置图片生成模型', 'error'); return; }
+
+  showToast('正在生成图片...', 'info');
+
+  try {
+    const baseUrl = imageModel.url.replace(/\/+$/, '');
+    const response = await fetchWithTimeout(`${baseUrl}/images/generations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${imageModel.key}` },
+      body: JSON.stringify({ model: imageModel.name, prompt: shot.prompt, n: 1, size: getImageSize(), response_format: 'url' })
+    }, 120000);
+
+    if (!response.ok) { const err = await response.text().catch(()=>''); throw new Error(`图片API错误 ${response.status}: ${err.slice(0,200)}`); }
+
+    const data = await response.json();
+    if (data.data && data.data.length > 0) {
+      const imageUrl = data.data[0].url || data.data[0].b64_json;
+      if (!imageUrl) throw new Error('API 返回的图片数据中没有 url / b64_json 字段');
+      state.storyboard[index].image = imageUrl.startsWith('data:') ? imageUrl : (imageUrl.startsWith('http') ? imageUrl : `data:image/png;base64,${imageUrl}`);
+      saveState();
+      renderStoryboard();
+      showToast('✅ 图片生成成功！', 'success');
+    } else { throw new Error('API未返回图片数据'); }
+  } catch(e) { showToast('图片生成失败: ' + e.message, 'error'); }
+}
+
+// ====== Video Generation (Agnes-style with polling) ======
+function buildVideoCreateUrl(base) {
+  if (!base) return base;
+  let u = base.replace(/\/+$/, '');
+  if (/\/videos$/.test(u)) return u;
+  if (/\/v1$/.test(u)) return u + '/videos';
+  return u + '/v1/videos';
+}
+
+function extractVideoUrl(data) {
+  return data.remixed_from_video_id ||
+         data.metadata?.url ||
+         data.output?.video_url || data.output?.url ||
+         data.video_url || data.result?.video_url || data.result?.url ||
+         (data.data && data.data[0] && (data.data[0].url || data.data[0].video)) ||
+         data.video || data.url || '';
+}
+
+function extractProgressInfo(data) {
+  const info = { percent: 0, status: '', step: '' };
+  info.percent = data.progress ?? data.percentage ?? data.percent ?? 0;
+  if (typeof info.percent === 'string' && info.percent.endsWith('%')) info.percent = parseInt(info.percent);
+  if (typeof info.percent === 'number' && info.percent > 0 && info.percent < 1) info.percent = Math.round(info.percent * 100);
+  info.status = data.status || data.state || data.phase || '';
+  info.step = data.step || data.current_step || data.message || data.msg || '';
+  if (data.progress && typeof data.progress === 'object') {
+    info.percent = info.percent || data.progress.percent || data.progress.percentage || 0;
+    info.step = info.step || data.progress.step || data.progress.status || '';
+  }
+  if (typeof info.percent === 'string') info.percent = parseInt(info.percent) || 0;
+  if (info.percent > 100) info.percent = 100;
+  return info;
+}
+
+const POLL_INTERVAL_BASE = 5000;
+const POLL_INTERVAL_MAX = 10000;
+const MAX_POLLS = 150;
+
+function formatElapsed(ms) {
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return sec + '秒';
+  const min = Math.floor(sec / 60);
+  return min + '分' + (sec % 60) + '秒';
+}
+
+// Video log functions
+function vlog(type, msg, detail) {
+  const panel = document.getElementById('videoLogPanel');
+  const body = document.getElementById('videoLogBody');
+  const countEl = document.getElementById('videoLogCount');
+  panel.style.display = 'block';
+
+  const ts = new Date().toLocaleTimeString();
+  const iconMap = { info: '🔵', success: '✅', error: '❌', warning: '⚠️', req: '📡', resp: '📥', poll: '🔄', done: '🎬', data: '📋' };
+  const icon = iconMap[type] || '📌';
+  let badgeHtml = '';
+  if (type === 'req') badgeHtml = '<span class="log-badge post">POST</span>';
+  if (type === 'resp') badgeHtml = '<span class="log-badge status">RESP</span>';
+  if (type === 'poll') badgeHtml = '<span class="log-badge get">GET</span>';
+  if (type === 'error') badgeHtml = '<span class="log-badge err">ERR</span>';
+
+  const div = document.createElement('div');
+  div.className = 'log-entry ' + type;
+  div.innerHTML = `<span class="log-time">${ts}</span><span class="log-icon">${icon}</span><span class="log-msg">${badgeHtml}${escapeHtml(msg)}</span>`;
+  body.appendChild(div);
+
+  if (detail) {
+    const detailDiv = document.createElement('div');
+    detailDiv.className = 'log-detail';
+    detailDiv.textContent = typeof detail === 'string' ? detail : JSON.stringify(detail, null, 2);
+    detailDiv.onclick = function() { this.style.maxHeight = this.style.maxHeight === 'none' ? '200px' : 'none'; };
+    body.appendChild(detailDiv);
+  }
+
+  VIDEO_LOG.push({ ts, type, msg, detail });
+  countEl.textContent = VIDEO_LOG.length + ' 条';
+  body.scrollTop = body.scrollHeight;
+}
+
+function vlogProgress(pct, msg) {
+  vlog('poll', '进度 ' + pct + '%' + (msg ? ' — ' + msg : ''));
+  let bar = document.getElementById('videoProgressBar');
+  if (!bar) {
+    const body = document.getElementById('videoLogBody');
+    const wrap = document.createElement('div');
+    wrap.className = 'log-progress-bar';
+    wrap.id = 'videoProgressBarWrap';
+    wrap.innerHTML = '<div class="log-progress-bar-fill" id="videoProgressBar" style="width:0%"></div>';
+    body.appendChild(wrap);
+    bar = document.getElementById('videoProgressBar');
+  }
+  bar.style.width = pct + '%';
+}
+
+function clearVideoLog() {
+  VIDEO_LOG.length = 0;
+  document.getElementById('videoLogBody').innerHTML = '';
+  document.getElementById('videoLogCount').textContent = '0 条';
+  document.getElementById('videoLogPanel').style.display = 'none';
+}
+
+function updateVideoStatus(status, msg) {
+  const card = document.getElementById('videoStatusCard');
+  const badge = document.getElementById('videoStatusBadge');
+  const content = document.getElementById('videoStatusContent');
+  card.style.display = 'block';
+  if (status === 'generating') { badge.className = 'badge badge-primary'; badge.textContent = '生成中'; }
+  else if (status === 'done') { badge.className = 'badge badge-accent'; badge.textContent = '已完成'; }
+  else if (status === 'error') { badge.className = 'badge'; badge.style.background = 'rgba(225,112,85,0.2)'; badge.textContent = '失败'; }
+  content.innerHTML = msg;
+}
+
+async function generateShotVideo(index) {
+  const shot = state.storyboard[index];
+  if (!shot || !shot.prompt) { showToast('请先生成故事板内容', 'error'); return; }
+
+  const videoModel = state.models.video.find(m => m.id === state.selectedModels.video);
+  if (!videoModel || !videoModel.key) { showToast('请先配置视频大模型API', 'error'); return; }
+
+  const baseUrl = (videoModel.url || '').replace(/\/+$/, '');
+  const apiKey = videoModel.key;
+  const startTime = Date.now();
+
+  // Update UI
+  state.storyboard[index].videoStatus = 'generating';
+  renderStoryboard();
+  if (!batchRunning) clearVideoLog();
+  updateVideoStatus('generating', `<div style="display:flex;align-items:center;gap:8px;"><span class="spinner"></span> 分镜 ${shot.id} 视频生成中...</div>`);
+  showToast('🎬 视频任务已提交...', 'info');
+
+  try {
+    // Use the detailed prompt directly - strict adherence to storyboard prompt content
+    const prompt = shot.prompt;
+    const negPrompt = 'Avoid: text overlay, watermark, low quality, blurry, distorted';
+
+    // Step 1: Build request URL and submit
+    const createUrl = buildVideoCreateUrl(baseUrl);
+    const payload = {
+      model: videoModel.name || 'agnes-video-v2.0',
+      prompt: prompt,
+      negative_prompt: negPrompt,
+      width: getVideoDims()[0],
+      height: getVideoDims()[1],
+      num_frames: 121,
+      frame_rate: 24
+    };
+    // 有首帧图时随 payload 下发（image-to-video）；不支持的网关会忽略该字段
+    if (shot.image) { payload.image = shot.image; }
+
+    const endpointsToTry = [createUrl, baseUrl + '/v1/videos'];
+    vlog('info', '🎬 开始视频生成流程 | 分镜 ' + shot.id);
+    vlog('info', '模型: ' + (videoModel.name || 'agnes-video-v2.0') + ' | Base URL: ' + baseUrl);
+
+    let taskData = null;
+    let lastError = '';
+
+    for (const ep of endpointsToTry) {
+      try {
+        vlog('req', 'POST ' + ep, payload);
+        const response = await fetchWithTimeout(ep, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+          body: JSON.stringify(payload)
+        }, 180000);
+
+        if (response.ok) {
+          taskData = await response.json();
+          vlog('resp', 'HTTP ' + response.status + ' ✓', taskData);
+          break;
+        } else {
+          const errText = await response.text().catch(() => '');
+          lastError = ep + ': ' + response.status + ' - ' + errText.substring(0, 200);
+          vlog('warning', '端点失败 ' + response.status + ': ' + ep, errText.slice(0, 300));
+          if (response.status !== 403 && response.status !== 404 && response.status !== 405 && response.status !== 400) {
+            throw new Error('API错误 (' + response.status + '): ' + errText.substring(0, 200));
+          }
+        }
+      } catch(fetchErr) {
+        if (fetchErr.message.startsWith('API错误')) throw fetchErr;
+        lastError = ep + ': ' + fetchErr.message;
+        vlog('warning', '网络错误: ' + ep, fetchErr.message);
+      }
+    }
+
+    if (!taskData) { vlog('error', '所有端点均失败', lastError); throw new Error('所有视频API端点均失败。最后错误: ' + lastError); }
+    vlog('data', '任务创建响应', taskData);
+
+    // Step 2: Extract task ID
+    const videoId = taskData.video_id || taskData.task_id || taskData.id;
+    if (!videoId) { vlog('error', '响应中未找到任务ID', taskData); throw new Error('API未返回任务ID (video_id/task_id/id)'); }
+
+    const initStatus = taskData.status || '';
+    vlog('success', '任务已创建 | video_id: ' + videoId + ' | status: ' + initStatus);
+    updateVideoStatus('generating', `<div style="display:flex;align-items:center;gap:8px;"><span class="spinner"></span> 分镜 ${shot.id} — 任务ID: ${escapeHtml(String(videoId))}</div>`);
+
+    // Direct complete (rare)
+    if (initStatus === 'completed') {
+      const videoUrl = extractVideoUrl(taskData);
+      if (videoUrl) {
+        state.storyboard[index].video = videoUrl;
+        state.storyboard[index].videoStatus = 'done';
+        saveState();
+        renderStoryboard();
+        vlog('done', '🎉 视频已直接完成');
+        updateVideoStatus('done', `✅ 分镜 ${shot.id} 视频生成完成`);
+        showToast('✅ 视频生成成功！', 'success');
+        return;
+      }
+    }
+
+    // Step 3: Poll for completion
+    const domainRoot = (baseUrl.match(/^https?:\/\/[^/]+/i) || [baseUrl])[0];
+    const pollPaths = [
+      '/agnesapi?video_id=' + videoId,
+      '/v1/videos/' + videoId,
+      '/v1/videos/generations/' + videoId,
+      '/video/generations/' + videoId,
+    ];
+    const pollEndpoints = pollPaths.map(p => domainRoot + p);
+    vlog('req', '轮询端点列表:', pollPaths.map(p => domainRoot + p));
+
+    let videoUrl = '';
+    let lastStatus = '';
+    let pollCount = 0;
+
+    for (var attempt = 0; attempt < MAX_POLLS; attempt++) {
+      if (batchCancelRequested) throw new Error('已取消批量任务');
+      await new Promise(r => setTimeout(r, Math.min(POLL_INTERVAL_BASE + (attempt * 200), POLL_INTERVAL_MAX)));
+      pollCount++;
+      var elapsed = Date.now() - startTime;
+
+      var pollData = null;
+      for (var epIdx = 0; epIdx < pollEndpoints.length; epIdx++) {
+        try {
+          var resp = await fetchWithTimeout(pollEndpoints[epIdx], { headers: { 'Authorization': 'Bearer ' + apiKey } }, 30000);
+          if (resp.ok) { pollData = await resp.json(); break; }
+        } catch(ignored) {}
+      }
+
+      // Fallback: POST to agnesapi
+      if (!pollData) {
+        try {
+          var postUrl = domainRoot + '/agnesapi?video_id=' + videoId + '&model_name=' + (videoModel.name || 'agnes-video-v2.0');
+          var postResp = await fetchWithTimeout(postUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+            body: JSON.stringify({ id: videoId, task_id: videoId, model: videoModel.name || 'agnes-video-v2.0' })
+          }, 30000);
+          if (postResp.ok) pollData = await postResp.json();
+        } catch(ignored) {}
+      }
+
+      if (!pollData) {
+        if (attempt % 10 === 0) vlog('warning', '第' + pollCount + '次查询未获取到数据 | ' + formatElapsed(elapsed));
+        continue;
+      }
+
+      var info = extractProgressInfo(pollData);
+      var status = (pollData.status || info.status || '').toLowerCase();
+
+      if (status !== lastStatus) {
+        vlog('info', '状态变更: ' + (lastStatus || '(初始)') + ' → ' + status, pollData);
+        lastStatus = status;
+        updateVideoStatus('generating', `<div style="display:flex;align-items:center;gap:8px;"><span class="spinner"></span> 分镜 ${shot.id} — 状态: ${status} ${info.percent > 0 ? '(' + info.percent + '%)' : ''}</div>`);
+      }
+
+      if (info.percent > 0) vlogProgress(info.percent, '已等待 ' + formatElapsed(elapsed));
+      else if (attempt % 10 === 0) vlog('poll', '第' + pollCount + '次查询 | status: ' + status + ' | ' + formatElapsed(elapsed));
+
+      var isComplete = status === 'completed' || status === 'done' || status === 'success' || info.percent >= 100;
+      if (isComplete) {
+        videoUrl = extractVideoUrl(pollData);
+        if (videoUrl) { vlog('success', '视频URL: ' + videoUrl); break; }
+        else { vlog('error', 'completed但未找到视频URL', pollData); }
+      }
+
+      if (status === 'failed' || status === 'error' || status === 'cancelled') {
+        var errMsg = pollData.error?.message || pollData.message || info.step || '视频生成失败';
+        vlog('error', '生成失败: ' + errMsg, pollData);
+        throw new Error('视频生成失败: ' + errMsg);
+      }
+    }
+
+    if (videoUrl) {
+      state.storyboard[index].video = videoUrl;
+      state.storyboard[index].videoStatus = 'done';
+      saveState();
+      renderStoryboard();
+      vlog('done', '🎉 视频生成完成 | 总耗时: ' + formatElapsed(Date.now() - startTime));
+      updateVideoStatus('done', `✅ 分镜 ${shot.id} 视频生成完成 | 耗时: ${formatElapsed(Date.now() - startTime)}`);
+      showToast('✅ 视频生成成功！', 'success');
+    } else {
+      vlog('error', '超时: 已等待 ' + formatElapsed(Date.now() - startTime));
+      throw new Error('视频生成超时，请查看日志了解详情');
+    }
+  } catch(e) {
+    state.storyboard[index].videoStatus = 'error';
+    renderStoryboard();
+    vlog('error', '流程终止: ' + e.message);
+    updateVideoStatus('error', `❌ 分镜 ${shot.id} 视频生成失败: ${escapeHtml(e.message)}`);
+    showToast('❌ 视频生成失败: ' + e.message, 'error');
+  }
+}
+
+// ====== Random Demo ======
+function randomDemo() {
+  const demos = [
+    '一个孤独的机器人在废弃城市中寻找最后一朵花，它从废墟中苏醒，穿过荒芜的街道，在一个破败的温室里发现了目标，但花朵正在枯萎',
+    '雨夜，一位侦探追踪神秘的红衣女子穿过东京街头，她消失在一家古董店，侦探推门而入发现了一个惊人的秘密',
+    '太空站中，宇航员发现窗外有不明飞行物在跟随，起初是恐惧，后来发现它是在传递某种信息，最终面临一个艰难的选择',
+    '一位老画家在阁楼里回忆年轻时失去的爱人，他翻开旧画册，每一幅画都唤醒一段记忆，最后他拿起画笔画下了最后一幅',
+    '末日废土上，两个孩子发现了一台还能播放音乐的留声机，音乐改变了周围人的表情，也改变了这个灰暗世界的一角',
+    '赛博朋克都市里，一位黑客正在破解最后一道防火墙，屏幕上数据流如瀑布，突然系统AI开口说话了，对话改变了一切'
+  ];
+  document.getElementById('storyInput').value = demos[Math.floor(Math.random() * demos.length)];
+  showToast('已填入示例故事，点击生成试试！', 'info');
+}
+
+// ====== Export Functions ======
+function exportPromptsMD() {
+  if (state.storyboard.length === 0) { showToast('请先生成故事板', 'error'); return; }
+  let md = `# 🎬 电影故事板 - 画面提示词\n\n> 生成时间: ${new Date().toLocaleString()}\n\n---\n\n`;
+  state.storyboard.forEach(s => {
+    md += `## 镜头 ${s.id} | ${s.timecode}\n\n| 项目 | 内容 |\n|------|------|\n| 运镜 | ${s.camera} |\n| 画面描述 | ${s.description} |\n| 台词/旁白 | ${s.dialogue || '—'} |\n| 声音设计 | ${s.sound} |\n| 时间码 | ${s.timecode} |\n\n### 画面提示词 (Prompt)\n\`\`\`\n${s.prompt}\n\`\`\`\n\n---\n\n`;
+  });
+  downloadFile('storyboard_prompts.md', md, 'text/markdown');
+  showToast('已导出 Markdown 提示词', 'success');
+}
+
+function exportPromptsJSON() {
+  if (state.storyboard.length === 0) { showToast('请先生成故事板', 'error'); return; }
+  const data = {
+    title: '电影故事板', generatedAt: new Date().toISOString(),
+    projectSpec: { type: document.getElementById('specType').value, ratio: document.getElementById('specRatio').value, duration: document.getElementById('specDuration').value, style: document.getElementById('specStyle').value, color: document.getElementById('specColor').value },
+    shots: state.storyboard.map(s => ({ id: s.id, timecode: s.timecode, description: s.description, camera: s.camera, dialogue: s.dialogue, sound: s.sound, prompt: s.prompt }))
+  };
+  downloadFile('storyboard_prompts.json', JSON.stringify(data, null, 2), 'application/json');
+  showToast('已导出 JSON 提示词', 'success');
+}
+
+function exportStoryHTML() {
+  if (state.storyboard.length === 0) { showToast('请先生成故事板', 'error'); return; }
+  const shots = state.storyboard;
+
+  // Build image cells - embed images as base64 if available
+  const cellsHtml = shots.map(s => {
+    const imgHtml = s.image ? `<div style="width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:6px;margin-bottom:8px;"><img src="${s.image}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="分镜 ${s.id}"></div>` : `<div style="width:100%;aspect-ratio:16/9;background:rgba(255,255,255,0.03);border:1px dashed #2d2d44;border-radius:6px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#8a8a9a;font-size:11px;">🎬 分镜 ${s.id}</div>`;
+    return `<div class="cell"><span class="cell-num">${s.id}</span>${imgHtml}<h3>镜头 ${s.id} | ${s.timecode}</h3><div class="meta"><span class="label">运镜:</span> ${escapeHtml(s.camera)} | <span class="label">声音:</span> ${escapeHtml(s.sound)}</div><div class="desc">${escapeHtml(s.description)}</div>${s.dialogue ? `<div style="color:#fdcb6e;font-size:11px;">💬 ${escapeHtml(s.dialogue)}</div>` : ''}<div class="prompt"><span class="label">Prompt:</span> ${escapeHtml(s.prompt)}</div></div>`;
+  }).join('\n');
+
+  const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>畅有趣 · 电影故事板</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:#0f0f1a;color:#e0e0e0;padding:24px}h1{text-align:center;font-size:24px;margin-bottom:8px;background:linear-gradient(135deg,#6c5ce7,#00cec9);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.sub{text-align:center;color:#8a8a9a;font-size:13px;margin-bottom:24px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:1200px;margin:0 auto}.cell{background:#1a1a2e;border:1px solid #2d2d44;border-radius:10px;padding:14px;position:relative}.cell-num{position:absolute;top:8px;left:8px;width:24px;height:24px;background:linear-gradient(135deg,#6c5ce7,#00cec9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;z-index:2}.cell h3{font-size:13px;color:#a29bfe;margin-bottom:6px;padding-left:30px}.cell .meta{font-size:11px;color:#8a8a9a;margin-bottom:6px}.cell .desc{font-size:12px;line-height:1.5;margin-bottom:6px}.cell .prompt{font-size:11px;color:#81ecec;background:rgba(0,0,0,0.3);padding:8px;border-radius:6px;font-family:monospace;line-height:1.4;margin-top:8px}.cell .label{color:#6c5ce7;font-weight:500}.info{max-width:1200px;margin:16px auto 0;font-size:12px;color:#8a8a9a;text-align:center}@media(max-width:768px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:480px){.grid{grid-template-columns:1fr}}</style></head>
+<body><h1>🎬 电影故事板</h1><p class="sub">生成时间: ${new Date().toLocaleString()}</p><div class="grid">
+${cellsHtml}
+</div><p class="info">源码出自：公众号路上侠客，由畅有趣开源并发布。 <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener" style="color:#8a8a9a;">浙ICP备2024105328号</a></p></body></html>`;
+  downloadFile('storyboard.html', html, 'text/html');
+  showToast('已导出 HTML 故事板（含分镜图）', 'success');
+}
+
+async function exportImages() {
+  if (state.storyboard.length === 0) { showToast('请先生成故事板', 'error'); return; }
+  try {
+    const canvas = document.createElement('canvas');
+    const cols = 3;
+    const rows = Math.max(3, Math.ceil(state.storyboard.length / cols));
+    const cellW = 400, cellH = 280, padding = 16, headerH = 80;
+    canvas.width = cols * cellW + (cols + 1) * padding;
+    canvas.height = rows * cellH + (rows + 1) * padding + headerH;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0f0f1a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#6c5ce7'; ctx.font = 'bold 24px sans-serif'; ctx.fillText('🎬 电影故事板', padding, 40);
+    ctx.fillStyle = '#8a8a9a'; ctx.font = '12px sans-serif'; ctx.fillText(new Date().toLocaleString(), padding, 60);
+
+    state.storyboard.forEach((shot, i) => {
+      const col = i % cols, row = Math.floor(i / cols);
+      const x = padding + col * (cellW + padding), y = headerH + padding + row * (cellH + padding);
+      ctx.fillStyle = '#1a1a2e'; ctx.strokeStyle = '#2d2d44'; ctx.lineWidth = 1;
+      roundRect(ctx, x, y, cellW, cellH, 8);
+      ctx.fillStyle = '#6c5ce7'; ctx.beginPath(); ctx.arc(x + 20, y + 20, 12, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(shot.id, x + 20, y + 24); ctx.textAlign = 'left';
+      ctx.fillStyle = '#a29bfe'; ctx.font = 'bold 12px sans-serif'; ctx.fillText(`镜头 ${shot.id} | ${shot.timecode}`, x + 38, y + 24);
+      ctx.fillStyle = '#8a8a9a'; ctx.font = '11px sans-serif'; ctx.fillText(`📷 ${shot.camera}  🔊 ${shot.sound}`, x + 12, y + 48);
+      ctx.fillStyle = '#e0e0e0'; ctx.font = '11px sans-serif'; wrapText(ctx, shot.description, x + 12, y + 70, cellW - 24, 16, 6);
+      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x + 8, y + 168, cellW - 16, 80);
+      ctx.fillStyle = '#81ecec'; ctx.font = '10px monospace'; wrapText(ctx, shot.prompt, x + 12, y + 180, cellW - 24, 14, 4);
+    });
+    ctx.fillStyle = '#8a8a9a'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('源码出自：公众号路上侠客，由畅有趣开源并发布 浙ICP备2024105328号', canvas.width / 2, canvas.height - 12);
+
+    canvas.toBlob(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'storyboard.png'; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 1000); showToast('已导出故事板图片', 'success'); }, 'image/png');
+  } catch(e) { showToast('图片导出失败: ' + e.message, 'error'); }
+}
+
+function exportAllShotImages() {
+  if (state.storyboard.length === 0) { showToast('请先生成故事板', 'error'); return; }
+  const shotsWithImages = state.storyboard.filter(s => s.image);
+  if (shotsWithImages.length === 0) { showToast('没有已生成的分镜图片，请先点击"生图"按钮生成', 'error'); return; }
+  shotsWithImages.forEach((shot, i) => {
+    setTimeout(async () => {
+      try {
+        // 先尝试拉回 blob 下载（可绕过跨域 a.download 失效问题）
+        const resp = await fetch(shot.image, { mode: 'cors' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `storyboard_shot_${shot.id}.png`;
+        a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch(e) {
+        // 跨域拉取失败时退化为新标签页打开
+        const a = document.createElement('a');
+        a.href = shot.image;
+        a.download = `storyboard_shot_${shot.id}.png`;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      }
+    }, i * 500);
+  });
+  showToast(`正在导出 ${shotsWithImages.length} 张分镜图片...`, 'success');
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+  let line = '', lineCount = 0;
+  for (let i = 0; i < text.length; i++) {
+    const testLine = line + text[i];
+    if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
+      ctx.fillText(line, x, y + lineCount * lineHeight); line = text[i]; lineCount++;
+      if (lineCount >= maxLines) { ctx.fillText(line + '...', x, y + lineCount * lineHeight); return; }
+    } else { line = testLine; }
+  }
+  ctx.fillText(line, x, y + lineCount * lineHeight);
+}
+
+async function exportVideo() {
+  if (state.storyboard.length === 0) { showToast('请先生成故事板', 'error'); return; }
+  showToast('正在生成故事板预览视频...', 'info');
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1920; canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+
+    // Preload all images before starting recording
+    const loadedImages = [];
+    for (let i = 0; i < state.storyboard.length; i++) {
+      const shot = state.storyboard[i];
+      if (shot.image) {
+        try {
+          const img = await new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => resolve(null);
+            img.src = shot.image;
+          });
+          loadedImages[i] = img;
+        } catch(e) { loadedImages[i] = null; }
+      } else {
+        loadedImages[i] = null;
+      }
+    }
+
+    const stream = canvas.captureStream(30);
+    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+    const chunks = [];
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+    return new Promise(resolve => {
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'storyboard.webm'; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url); showToast('✅ 故事板视频已导出', 'success'); resolve();
+      };
+      mediaRecorder.start();
+      let frameIndex = 0; const fps = 30; const frameDuration = 3;
+      const totalFrames = state.storyboard.length * fps * frameDuration;
+
+      function drawFrame() {
+        if (frameIndex >= totalFrames) { mediaRecorder.stop(); return; }
+        const shotIndex = Math.floor(frameIndex / (fps * frameDuration));
+        const shot = state.storyboard[Math.min(shotIndex, state.storyboard.length - 1)];
+        const progress = (frameIndex % (fps * frameDuration)) / (fps * frameDuration);
+        ctx.fillStyle = '#0f0f1a'; ctx.fillRect(0, 0, 1920, 1080);
+
+        const img = loadedImages[shotIndex];
+        if (img) {
+          ctx.drawImage(img, 0, 0, 1920, 1080);
+        } else {
+          const gradient = ctx.createLinearGradient(0, 0, 1920, 1080);
+          const hue = (shot.id * 40) % 360;
+          gradient.addColorStop(0, `hsl(${hue}, 60%, 15%)`); gradient.addColorStop(1, `hsl(${(hue + 60) % 360}, 60%, 8%)`);
+          ctx.fillStyle = gradient; ctx.fillRect(0, 0, 1920, 1080);
+          ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.font = 'bold 300px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(shot.id, 960, 600); ctx.textAlign = 'left';
+        }
+        drawOverlay(ctx, shot, progress);
+        frameIndex++; requestAnimationFrame(drawFrame);
+      }
+
+      function drawOverlay(ctx, shot, progress) {
+        const grad = ctx.createLinearGradient(0, 680, 0, 1080); grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(1, 'rgba(0,0,0,0.85)');
+        ctx.fillStyle = grad; ctx.fillRect(0, 680, 1920, 400);
+        ctx.fillStyle = '#6c5ce7'; ctx.font = 'bold 28px sans-serif'; ctx.fillText(`镜头 ${shot.id}`, 80, 820);
+        ctx.fillStyle = '#8a8a9a'; ctx.font = '20px sans-serif'; ctx.fillText(`⏱️ ${shot.timecode}  📷 ${shot.camera}`, 80, 860);
+        ctx.fillStyle = '#e0e0e0'; ctx.font = '22px sans-serif';
+        // Wrap long descriptions
+        const desc = shot.description || '';
+        const maxChars = 70;
+        for (let ln = 0; ln < 2 && ln * maxChars < desc.length; ln++) {
+          ctx.fillText(desc.substring(ln * maxChars, (ln + 1) * maxChars), 80, 910 + ln * 30);
+        }
+        if (shot.dialogue) { ctx.fillStyle = '#fdcb6e'; ctx.font = 'italic 20px sans-serif'; ctx.fillText(`💬 ${shot.dialogue}`, 80, 970); }
+        ctx.fillStyle = '#8a8a9a'; ctx.font = '18px sans-serif'; ctx.fillText(`🔊 ${(shot.sound||'').substring(0, 80)}`, 80, 1010);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(80, 1040, 1760, 4);
+        ctx.fillStyle = '#6c5ce7'; ctx.fillRect(80, 1040, 1760 * progress, 4);
+        ctx.fillStyle = 'rgba(108,92,231,0.8)'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'right'; ctx.fillText('🎬 AI 电影故事板', 1840, 40); ctx.textAlign = 'left';
+      }
+      drawFrame();
+    });
+  } catch(e) { showToast('视频生成失败: ' + e.message, 'error'); }
+}
+
+function downloadFile(filename, content, type) {
+  const blob = new Blob([content], { type }); const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.target = '_blank'; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  // Close export menu after download
+  const menu = document.getElementById('exportMenu');
+  if (menu) menu.classList.remove('active');
+}
+
+// ====== Init ======
+loadState();
+renderStoryboard();
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+    document.getElementById('exportMenu').classList.remove('active');
+  }
+});
+</script>
+</body>
+</html>
