@@ -1352,34 +1352,89 @@ function startSequentialPreview() {
 
 // ====== 合并成片：ffmpeg.wasm 浏览器内按分镜顺序拼接为单个 MP4（仅桌面端） ======
 let ffmpegLoadPromise = null;
-async function toBlobURL(url, mime) {
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error('内核资源下载失败: ' + url);
-  const buf = await resp.arrayBuffer();
-  return URL.createObjectURL(new Blob([buf], { type: mime }));
+// 国内网络实测：jsdelivr 大概率不可达，unpkg 大文件不稳定，npmmirror 阿里镜像最稳
+// 注意：必须用 /dist/esm/ 版 core——0.12 的 worker 是 module worker，UMD 版会报 "failed to import ffmpeg-core.js"
+const FFMPEG_CDN_BASES = [
+  'https://registry.npmmirror.com/@ffmpeg/core/0.12.6/files/dist/esm',
+  'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm',
+  'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm'
+];
+// worker 调度脚本不在 core 包里，单独列 CDN（跟随 @ffmpeg/ffmpeg 包）
+const FFMPEG_WORKER_URLS = [
+  'https://registry.npmmirror.com/@ffmpeg/ffmpeg/0.12.10/files/dist/umd/814.ffmpeg.js',
+  'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js'
+];
+// 带 CDN 回退的下载：依次尝试，单地址 60s 超时；onProgress(0-100)
+async function fetchCoreFile(filename, onProgress) {
+  const errors = [];
+  for (const base of FFMPEG_CDN_BASES) {
+    const url = base + '/' + filename;
+    const t0 = Date.now();
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 60000);
+      const resp = await fetch(url, { signal: ctrl.signal });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const total = Number(resp.headers.get('content-length')) || 0;
+      let buf;
+      if (total && resp.body && resp.body.getReader) {
+        const reader = resp.body.getReader();
+        const chunks = []; let got = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value); got += value.length;
+          if (onProgress) onProgress(Math.round(got / total * 100));
+        }
+        buf = new Uint8Array(got);
+        let off = 0;
+        for (const c of chunks) { buf.set(c, off); off += c.length; }
+      } else {
+        buf = new Uint8Array(await resp.arrayBuffer());
+        if (onProgress) onProgress(100);
+      }
+      clearTimeout(timer);
+      return URL.createObjectURL(new Blob([buf], { type: filename.endsWith('.wasm') ? 'application/wasm' : 'text/javascript' }));
+    } catch (e) {
+      errors.push(url.split('/')[2] + '(' + Math.round((Date.now()-t0)/1000) + 's): ' + e.message);
+    }
+  }
+  throw new Error('内核资源下载失败，已尝试 ' + FFMPEG_CDN_BASES.length + ' 个源 [' + errors.join('; ') + ']');
 }
-function loadFfmpegCore() {
-  if (window.FFmpegWASM && window.FFmpegWASM.FFmpeg && window.__ffmpegReady) return Promise.resolve(window.__ffmpegReady);
+// 简单下载转 blob URL（无进度，用于小文件）
+async function toBlobURLSafe(url, mime) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  return URL.createObjectURL(new Blob([await resp.arrayBuffer()], { type: mime }));
+}
+function loadFfmpegCore(onProgress) {  if (window.FFmpegWASM && window.FFmpegWASM.FFmpeg && window.__ffmpegReady) return Promise.resolve(window.__ffmpegReady);
   if (!ffmpegLoadPromise) {
     ffmpegLoadPromise = (async () => {
       if (!window.FFmpegWASM || !window.FFmpegWASM.FFmpeg) {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
-          script.onload = resolve;
-          script.onerror = () => reject(new Error('ffmpeg.wasm 脚本加载失败，请检查网络'));
-          document.head.appendChild(script);
-        });
+        // ffmpeg.js 脚本很小，unpkg 一般可达；失败再试镜像
+        let loaded = false;
+        for (const s of [
+          'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js',
+          'https://registry.npmmirror.com/@ffmpeg/ffmpeg/0.12.10/files/dist/umd/ffmpeg.js'
+        ]) {
+          try { await new Promise((res, rej) => { const el = document.createElement('script'); el.src = s; el.onload = res; el.onerror = () => rej(new Error('onerror')); document.head.appendChild(el); }); loaded = true; break; } catch(e) {}
+        }
+        if (!loaded) throw new Error('ffmpeg.wasm 脚本加载失败，请检查网络');
       }
       if (!window.FFmpegWASM || !window.FFmpegWASM.FFmpeg) throw new Error('ffmpeg.wasm 初始化失败（未找到 FFmpeg 类）');
       const ffmpeg = new window.FFmpegWASM.FFmpeg();
       ffmpeg.on('log', () => {});
-      const base = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-      const [coreURL, wasmURL] = await Promise.all([
-        toBlobURL(base + '/ffmpeg-core.js', 'text/javascript'),
-        toBlobURL(base + '/ffmpeg-core.wasm', 'application/wasm')
-      ]);
-      await ffmpeg.load({ coreURL, wasmURL });
+      const report = (name) => (pct) => { if (onProgress) onProgress(name, pct); };
+      // worker 调度脚本也必须以 blob URL 提供（classWorkerURL），否则跨域无法构造 Worker
+      const classWorkerURL = await (async () => {
+        for (const u of FFMPEG_WORKER_URLS) {
+          try { return await toBlobURLSafe(u, 'text/javascript'); } catch (e) {}
+        }
+        throw new Error('worker 调度脚本下载失败');
+      })();
+      const coreURL = await fetchCoreFile('ffmpeg-core.js', report('主程序'));
+      const wasmURL = await fetchCoreFile('ffmpeg-core.wasm', report('内核(25MB)'));
+      await ffmpeg.load({ classWorkerURL, coreURL, wasmURL });
       window.__ffmpegReady = ffmpeg;
       return ffmpeg;
     })();
@@ -1401,8 +1456,10 @@ async function mergeVideosFfmpeg() {
   btn.disabled = true;
 
   try {
-    showToast('⏳ 正在加载合并内核（首次约 25MB，请稍候）...', 'info');
-    const ffmpeg = await loadFfmpegCore();
+    showToast('⏳ 正在加载合并内核（首次约 25MB，国内网络约 10~60 秒）...', 'info');
+    const ffmpeg = await loadFfmpegCore((name, pct) => {
+      showToast(`⏳ 加载内核 ${name}: ${pct}%（多 CDN 自动回退中）`, 'info');
+    });
 
     // 拉取各段视频并写入 wasm 虚拟文件系统（MP4 需要 https 直链且允许跨域）
     const files = [];
