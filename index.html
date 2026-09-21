@@ -10,6 +10,7 @@
 <meta name="robots" content="index, follow">
 <meta name="theme-color" content="#6c5ce7">
 <link rel="canonical" href="https://changyouq.cn/">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
 <link rel="sitemap" type="application/xml" href="/sitemap.xml">
 <!-- Open Graph -->
 <meta property="og:type" content="website">
@@ -122,6 +123,17 @@
           <button class="tab" onclick="switchModelTab('video')">🎥 视频大模型</button>
         </div>
         <div class="tab-content active" id="tab-text">
+          <div class="preset-row">
+            <span class="preset-label">快速填入：</span>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('text','deepseek-chat','https://api.deepseek.com/v1')">DeepSeek</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('text','gpt-4o','https://api.openai.com/v1')">OpenAI</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('text','qwen-plus','https://dashscope.aliyuncs.com/compatible-mode/v1')">通义千问</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('text','moonshot-v1-8k','https://api.moonshot.cn/v1')">Kimi</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('text','sensenova-6.8-flash-lite','https://token.sensenova.cn/v1')">商汤日日新</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('text','agnes-2.5-flash','https://apihub.agnes-ai.com/v1')">Agnes</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('text','MiniMax-M2','https://api.minimax.chat/v1')">MiniMax M2</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('text','doubao-seed-2.0-pro','https://ark.cn-beijing.volces.com/api/v3')">豆包 火山方舟</button>
+          </div>
           <div class="config-row">
             <div class="form-group" style="margin:0">
               <label class="form-label">模型名称 <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-popup">如 gpt-4、claude-3、deepseek-chat 等。</span></span></label>
@@ -147,6 +159,14 @@
           <div class="model-list" id="textModelList"></div>
         </div>
         <div class="tab-content" id="tab-image">
+          <div class="preset-row">
+            <span class="preset-label">快速填入：</span>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('image','dall-e-3','https://api.openai.com/v1')">OpenAI DALL-E 3</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('image','cogview-3-flash','https://open.bigmodel.cn/api/paas/v4')">智谱 CogView</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('image','sensenova-u1.5-lite','https://token.sensenova.cn/v1')">商汤日日新</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('image','agnes-image-2.1-flash','https://apihub.agnes-ai.com/v1')">Agnes Image</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('image','doubao-seedream-4.0','https://ark.cn-beijing.volces.com/api/v3')">豆包 Seedream</button>
+          </div>
           <div class="config-row">
             <div class="form-group" style="margin:0">
               <label class="form-label">模型名称</label>
@@ -172,6 +192,12 @@
           <div class="model-list" id="imageModelList"></div>
         </div>
         <div class="tab-content" id="tab-video">
+          <div class="preset-row">
+            <span class="preset-label">快速填入：</span>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('video','agnes-video-v2.0','https://apihub.agnes-ai.com/v1')">Agnes</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('video','MiniMax-Hailuo-02','https://api.minimax.chat/v1')">MiniMax 海螺</button>
+            <button class="btn btn-ghost btn-sm" onclick="applyPreset('video','doubao-seedance-1-0-pro-250528','https://ark.cn-beijing.volces.com/api/v3')">Seedance 火山方舟</button>
+          </div>
           <div class="config-row">
             <div class="form-group" style="margin:0">
               <label class="form-label">模型名称</label>
@@ -263,8 +289,8 @@
     <div class="card" id="videoStatusCard" style="display:none;">
       <div class="card-header">
         <div class="card-title">
-          <span>🎬</span> 视频生成状态
-          <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-popup">实时显示视频生成任务的状态、进度和详细日志。支持Agnes等视频大模型的轮询状态追踪。</span></span>
+          <span>🛠️</span> 图片/视频生成状态
+          <span class="tooltip-wrap"><span class="tooltip-icon">?</span><span class="tooltip-popup">实时显示图片与视频生成任务的状态、进度和详细日志。支持Agnes、MiniMax、Seedance等视频大模型的轮询状态追踪。</span></span>
         </div>
         <span id="videoStatusBadge" class="badge badge-primary">等待中</span>
       </div>
@@ -342,7 +368,7 @@
         <li><strong>第一步：配置AI模型</strong> — 在顶部配置您的AI大模型API Key（文字模型用于生成故事板，图片模型用于生成画面，视频模型用于生成动态预览）</li>
         <li><strong>第二步：填写项目规格</strong> — 选择影片类型、画面比例、时长、风格、色调</li>
         <li><strong>第三步：输入故事内容</strong> — 在创作输入区填写故事描述、剧本片段或场景需求</li>
-        <li><strong>第四步：点击生成</strong> — 点击"AI 生成故事板"按钮，AI会自动展开完整故事情节</li>
+        <li><strong>第四步：点击生成</strong> — 点击"AI 生成故事板"按钮，AI会自动展开完整故事情节；未配置模型时可点「🎲 演示」一键查看本地示例</li>
         <li><strong>第五步：生成图片/视频</strong> — 在每个分镜格中点击"生图"或"生视频"按钮生成对应媒体</li>
       </ul>
       <h3>🎬 输出内容说明</h3>
@@ -358,7 +384,7 @@
       <ul>
         <li><strong>提示词 MD/JSON</strong> — 导出画面提示词文档</li>
         <li><strong>故事板 HTML</strong> — 导出独立的HTML页面</li>
-        <li><strong>故事板总图</strong> — 导出3×3拼合的PNG图片</li>
+        <li><strong>故事板总图</strong> — 导出3×3拼合的PNG总图（含已生成的分镜画面）</li>
         <li><strong>所有分镜图片</strong> — 逐个导出每个分镜生成的图片</li>
         <li><strong>视频URL地址</strong> — 导出所有成功生成的分镜视频URL至TXT文档</li>
         <li><strong>分镜图片URL地址</strong> — 导出所有成功生成的分镜图片URL至TXT文档</li>
@@ -412,7 +438,10 @@
 
 <footer class="footer">
   <p>🎬 AI 电影视频故事板生成器 — 让创意可视化</p>
-  <p style="margin-top:8px;color:var(--primary-light);">源码出自：公众号路上侠客，由畅有趣开源并发布。 <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener" style="color:var(--primary-light);text-decoration:underline;">浙ICP备2024105328号</a></p>
+  <p style="margin-top:8px;display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;">
+    <button class="btn btn-ghost btn-sm" onclick="showMyPopup()" aria-label="关注公众号">💬 关注公众号</button>
+    <span style="color:var(--primary-light);">源码出自：公众号路上侠客，由畅有趣开源并发布。 <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener" style="color:var(--primary-light);text-decoration:underline;">浙ICP备2024105328号</a></span>
+  </p>
 </footer>
 
 <div id="my-popup" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5)">
@@ -423,22 +452,15 @@
   </div>
 </div>
 <script>
+function showMyPopup(){
+  document.getElementById('my-popup').style.display='block';
+}
 function closeMyPopup(){
   document.getElementById('my-popup').style.display='none';
 }
-(function(){
-  var KEY = 'myPopupTime';
-  var DAY = 24 * 60 * 60 * 1000; // 24小时
-  var last = Number(localStorage.getItem(KEY) || 0);
-  if (Date.now() - last < DAY) return; // 24小时内弹过，直接不弹
-  setTimeout(function(){
-    document.getElementById('my-popup').style.display = 'block';
-    localStorage.setItem(KEY, Date.now()); // 弹出时记下时间，从这一刻起算24小时
-  }, 3000);
-  document.getElementById('my-popup').addEventListener('click', function(e){
-    if (e.target === this) closeMyPopup(); // 点遮罩也能关
-  });
-})();
+document.getElementById('my-popup').addEventListener('click', function(e){
+  if (e.target === this) closeMyPopup(); // 点遮罩也能关
+});
 </script>
 
 <script>
@@ -477,6 +499,13 @@ function showToast(msg, type = 'info') {
 }
 
 function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+async function waitWithCountdown(seconds, label) {
+  for (let s = seconds; s > 0; s--) {
+    updateVideoStatus('generating', `<div style="display:flex;align-items:center;gap:8px;"><span class="spinner"></span> ${escapeHtml(label)} ${s}s 后自动重试...</div>`);
+    await sleep(1000);
+  }
+}
 
 function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
   const controller = new AbortController();
@@ -495,13 +524,6 @@ function getImageSize() {
   if (r === '1:1') return '1024x1024';
   return '1792x1024'; // 16:9 / 2.35:1
 }
-// 画面比例联动到视频硬参数
-function getVideoDims() {
-  const r = getSpecRatio();
-  if (r === '9:16') return [768, 1152];
-  if (r === '1:1') return [768, 768];
-  return [1152, 768]; // 16:9 / 2.35:1
-}
 
 // ====== Config Panel ======
 function toggleConfig() { document.getElementById('configPanel').classList.toggle('collapsed'); }
@@ -516,6 +538,14 @@ function togglePassword(inputId, btn) {
   const input = document.getElementById(inputId);
   input.type = input.type === 'password' ? 'text' : 'password';
   btn.textContent = input.type === 'password' ? '👁️' : '🙈';
+}
+
+// 一键填入常见网关模板（Key 由用户自行粘贴）
+function applyPreset(type, model, baseUrl) {
+  document.getElementById(`${type}ModelName`).value = model;
+  document.getElementById(`${type}BaseUrl`).value = baseUrl;
+  document.getElementById(`${type}ApiKey`).focus();
+  showToast(`已填入 ${model} 模板，请粘贴你的 API Key`, 'info');
 }
 
 // ====== Model Config ======
@@ -664,7 +694,7 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => { overlay.addEven
 const defaultShots = Array.from({ length: 9 }, (_, i) => ({
   id: i + 1,
   timecode: `${String(Math.floor(i * 7 / 60)).padStart(2,'0')}:${String((i*7)%60).padStart(2,'0')} - ${String(Math.floor((i+1)*7/60)).padStart(2,'0')}:${String(((i+1)*7)%60).padStart(2,'0')}`,
-  description: '', startFrame: '', endFrame: '', camera: '', dialogue: '', sound: '', prompt: '', image: null, video: null, videoStatus: null
+  description: '', startFrame: '', endFrame: '', camera: '', dialogue: '', sound: '', prompt: '', image: null, video: null, videoStatus: null, imageStatus: null
 }));
 
 function commitPendingEdits() {
@@ -681,7 +711,17 @@ function commitPendingEdits() {
 function renderStoryboard() {
   commitPendingEdits();
   const grid = document.getElementById('storyboardGrid');
-  const shots = state.storyboard.length > 0 ? state.storyboard : defaultShots;
+  const shots = state.storyboard;
+
+  if (shots.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🎬</div>
+        <div class="empty-title">还没有故事板</div>
+        <div class="empty-desc">输入故事创意后点击「AI 生成故事板」开始创作；或点击右上角「🎲 演示」一键查看完整示例</div>
+      </div>`;
+    return;
+  }
 
   grid.innerHTML = shots.map((shot, i) => `
     <div class="storyboard-cell fade-in" style="animation-delay:${i*0.05}s">
@@ -697,6 +737,7 @@ function renderStoryboard() {
         <textarea rows="2" onchange="updateShot(${i},'description',this.value)" placeholder="画面描述...">${escapeHtml(shot.description||'')}</textarea>
         <span style="color:var(--warning);font-size:10px;">💬 <input type="text" value="${escapeHtml(shot.dialogue||'')}" onchange="updateShot(${i},'dialogue',this.value)" style="background:transparent;border:none;color:var(--warning);font-size:10px;width:100%;font-family:inherit;" placeholder="台词/旁白"></span>
         <span style="color:var(--text-dim);font-size:10px;">🔊 <input type="text" value="${escapeHtml(shot.sound||'')}" onchange="updateShot(${i},'sound',this.value)" style="background:transparent;border:none;color:var(--text-dim);font-size:10px;width:100%;font-family:inherit;" placeholder="声音设计"></span>
+        ${shot.imageStatus ? `<div class="cell-video-status ${shot.imageStatus}">${shot.imageStatus === 'generating' ? '⏳ 图片生成中...' : shot.imageStatus === 'done' ? '✅ 图片已生成' : '❌ 图片生成失败'}</div>` : ''}
         ${shot.videoStatus ? `<div class="cell-video-status ${shot.videoStatus}">${shot.videoStatus === 'generating' ? '⏳ 视频生成中...' : shot.videoStatus === 'done' ? '✅ 视频已生成' : '❌ 视频生成失败'}</div>` : ''}
         <div class="cell-actions">
           <button class="btn btn-ghost btn-sm" onclick="editShot(${i})" style="font-size:10px;">✏️ 编辑</button>
@@ -715,7 +756,7 @@ function updateShot(index, field, value) {
 }
 
 function editShot(index) {
-  const shots = state.storyboard.length > 0 ? state.storyboard : defaultShots;
+  const shots = state.storyboard;
   const shot = shots[index];
   document.getElementById('editShotNum').value = `分镜 ${shot.id}`;
   document.getElementById('editDescription').value = shot.description;
@@ -848,10 +889,10 @@ ${extra ? `- 额外要求：${extra}` : ''}
       }
 
       // Ensure video field exists
-      shots = shots.map(s => ({ ...s, video: null, videoStatus: null }));
+      shots = shots.map(s => ({ ...s, video: null, videoStatus: null, imageStatus: null }));
       state.storyboard = shots;
     } else {
-      showToast('未配置AI模型，使用本地演示模式', 'info');
+      showToast('未配置模型，已用本地演示数据生成；配置模型后可重新生成 AI 版本', 'info');
       await new Promise(r => setTimeout(r, 1500));
       const demoRatio = document.getElementById('specRatio').value;
       state.storyboard = generateDemoShots(story, specType, specStyle, specColor, demoRatio);
@@ -862,11 +903,12 @@ ${extra ? `- 额外要求：${extra}` : ''}
     updateTimeline();
     showToast('✨ 故事板生成成功！', 'success');
   } catch(e) {
-    showToast('生成失败: ' + e.message, 'error');
-    state.storyboard = generateDemoShots(story, specType, specStyle, specColor, specRatio);
-    renderStoryboard();
-    updatePromptOutput();
-    updateTimeline();
+    const corsHint = /Failed to fetch|NetworkError|Load failed|aborted|CORS/i.test(e.message)
+      ? '。可能原因：网关未开放浏览器跨域(CORS)或网络超时，可更换支持 CORS 的网关后重试'
+      : '';
+    showToast('生成失败: ' + e.message + corsHint, 'error');
+    showToast('可点击「🎲 演示」查看本地示例故事板', 'info');
+    if (state.storyboard.length === 0) renderStoryboard();
   }
 
   btn.disabled = false;
@@ -1084,6 +1126,8 @@ async function batchGenerateImages() {
   const imageModel = state.models.image.find(m => m.id === state.selectedModels.image);
   if (!imageModel || !imageModel.key) { showToast('请先配置图片生成模型', 'error'); return; }
   if (batchRunning) { showToast('已有批量任务在执行中', 'warning'); return; }
+  const pendingTotal = state.storyboard.filter(s => s.prompt).length;
+  if (!confirm(`将对 ${pendingTotal} 个分镜依次调用图片模型生图，会真实消耗 API 额度。确认开始？`)) return;
   batchRunning = true;
   batchCancelRequested = false;
   setCancelBtnVisible(true);
@@ -1112,6 +1156,7 @@ async function batchGenerateImages() {
   btn.disabled = false;
   btn.innerHTML = '<span>🖼️</span> 批量生图';
   saveState();
+  updateVideoStatus('done', `✅ 批量生图完成：成功 ${successCount}/${total}`);
   showToast(`✅ 批量生图完成！成功 ${successCount}/${total}`, batchCancelRequested ? 'warning' : 'success');
 }
 
@@ -1120,6 +1165,7 @@ async function batchGenerateVideos() {
   const videoModel = state.models.video.find(m => m.id === state.selectedModels.video);
   if (!videoModel || !videoModel.key) { showToast('请先配置视频大模型API', 'error'); return; }
   if (batchRunning) { showToast('已有批量任务在执行中', 'warning'); return; }
+  if (!confirm('批量生视频会先补齐缺失分镜图片，再逐镜生成视频；耗时较长且会真实消耗 API 额度。确认开始？')) return;
   batchRunning = true;
   batchCancelRequested = false;
   setCancelBtnVisible(true);
@@ -1170,6 +1216,7 @@ async function batchGenerateVideos() {
   btn.disabled = false;
   btn.innerHTML = '<span>🎥</span> 批量生视频';
   saveState();
+  updateVideoStatus('done', `✅ 批量生视频完成：成功 ${successCount}，跳过 ${skipCount}`);
   showToast(`✅ 批量视频完成！成功 ${successCount}，跳过 ${skipCount}`, 'success');
 }
 
@@ -1199,22 +1246,46 @@ function exportImageURLs() {
 }
 
 // ====== Image Generation ======
+// 组装生图请求体；商汤日日新需关闭水印与自动提示词改写，保持分镜 Prompt 原样
+function buildImagePayload(imageModel, prompt) {
+  const payload = { model: imageModel.name, prompt: prompt, n: 1, size: getImageSize(), response_format: 'url' };
+  const u = (imageModel.url || '').toLowerCase();
+  const m = (imageModel.name || '').toLowerCase();
+  if (u.includes('sensenova') || m.includes('sensenova')) {
+    payload.watermark = false;
+    payload.prompt_extend = false;
+    payload.output_format = 'png';
+  }
+  return payload;
+}
+
 async function generateShotImage(index) {
   const shot = state.storyboard[index];
   if (!shot || !shot.prompt) { showToast('请先生成故事板内容', 'error'); return; }
+  if (shot.imageStatus === 'generating') { showToast('该分镜图片正在生成中', 'warning'); return; }
 
   const imageModel = state.models.image.find(m => m.id === state.selectedModels.image);
   if (!imageModel || !imageModel.key) { showToast('请先配置图片生成模型', 'error'); return; }
 
+  state.storyboard[index].imageStatus = 'generating';
+  renderStoryboard();
+  updateVideoStatus('generating', `<div style="display:flex;align-items:center;gap:8px;"><span class="spinner"></span> 分镜 ${shot.id} 图片生成中...</div>`);
   showToast('正在生成图片...', 'info');
 
   try {
     const baseUrl = imageModel.url.replace(/\/+$/, '');
-    const response = await fetchWithTimeout(`${baseUrl}/images/generations`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${imageModel.key}` },
-      body: JSON.stringify({ model: imageModel.name, prompt: shot.prompt, n: 1, size: getImageSize(), response_format: 'url' })
-    }, 120000);
+    let response = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      response = await fetchWithTimeout(`${baseUrl}/images/generations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${imageModel.key}` },
+        body: JSON.stringify(buildImagePayload(imageModel, shot.prompt))
+      }, 120000);
+      if (response.status !== 429 || attempt >= 1) break;
+      const hint = await response.text().catch(() => '');
+      vlog('warning', '图片接口限流(429)，30s 后自动重试', hint.slice(0, 300));
+      await waitWithCountdown(30, '触发速率限制，分镜 ' + shot.id);
+    }
 
     if (!response.ok) { const err = await response.text().catch(()=>''); throw new Error(`图片API错误 ${response.status}: ${err.slice(0,200)}`); }
 
@@ -1223,29 +1294,94 @@ async function generateShotImage(index) {
       const imageUrl = data.data[0].url || data.data[0].b64_json;
       if (!imageUrl) throw new Error('API 返回的图片数据中没有 url / b64_json 字段');
       state.storyboard[index].image = imageUrl.startsWith('data:') ? imageUrl : (imageUrl.startsWith('http') ? imageUrl : `data:image/png;base64,${imageUrl}`);
+      state.storyboard[index].imageStatus = 'done';
       saveState();
       renderStoryboard();
+      updateVideoStatus('done', `✅ 分镜 ${shot.id} 图片生成完成`);
       showToast('✅ 图片生成成功！', 'success');
     } else { throw new Error('API未返回图片数据'); }
-  } catch(e) { showToast('图片生成失败: ' + e.message, 'error'); }
+  } catch(e) {
+    state.storyboard[index].imageStatus = 'error';
+    renderStoryboard();
+    updateVideoStatus('error', `❌ 分镜 ${shot.id} 图片生成失败: ${escapeHtml(e.message)}`);
+    showToast('图片生成失败: ' + e.message, 'error');
+  }
 }
 
-// ====== Video Generation (Agnes-style with polling) ======
-function buildVideoCreateUrl(base) {
-  if (!base) return base;
-  let u = base.replace(/\/+$/, '');
-  if (/\/videos$/.test(u)) return u;
-  if (/\/v1$/.test(u)) return u + '/videos';
-  return u + '/v1/videos';
+// ====== Video Generation (Agnes / MiniMax / Seedance with polling) ======
+// 按 Base URL / 模型名识别网关 provider，再按其协议构造请求与轮询
+function detectVideoProvider(baseUrl, modelName) {
+  const u = (baseUrl || '').toLowerCase();
+  const m = (modelName || '').toLowerCase();
+  if (u.includes('agnes-ai.com') || m.includes('agnes')) return 'agnes';
+  if (u.includes('minimax') || m.includes('minimax') || m.includes('hailuo')) return 'minimax';
+  if (u.includes('volces.com') || m.includes('seedance') || m.includes('doubao')) return 'seedance';
+  return 'generic';
+}
+
+function buildVideoCreateEndpoints(provider, base) {
+  const u = (base || '').replace(/\/+$/, '');
+  if (provider === 'seedance') return [u + '/contents/generations/tasks'];
+  if (/\/videos$/.test(u)) return [u];
+  if (/\/v1$/.test(u)) return [u + '/videos', u + '/video/generations', u + '/video_generation'];
+  return [u + '/v1/videos', u + '/v1/video/generations', u + '/video_generation'];
+}
+
+// 按网关协议生成请求体
+function buildVideoPayload(provider, modelName, prompt, negPrompt, shot) {
+  if (provider === 'seedance') {
+    // 火山方舟：content 数组格式，比例/时长/水印通过文本指令下发
+    const ratioMap = { '2.35:1': '21:9', '16:9': '16:9', '1:1': '1:1', '9:16': '9:16' };
+    const text = prompt + ' --ratio ' + (ratioMap[getSpecRatio()] || '16:9') + ' --duration 5 --watermark false';
+    const content = [{ type: 'text', text: text }];
+    if (shot.image) content.push({ type: 'image_url', image_url: { url: shot.image } });
+    return { model: modelName || 'doubao-seedance-1-0-pro-250528', content: content };
+  }
+  if (provider === 'minimax') {
+    // MiniMax 海螺：首帧图字段为 first_frame_image
+    const payload = { model: modelName || 'MiniMax-Hailuo-02', prompt: prompt };
+    if (shot.image) payload.first_frame_image = shot.image;
+    return payload;
+  }
+  // Agnes / 通用 OpenAI 风格网关（Agnes 要求 num_frames 为 8n+1 且不超过 81）
+  const payload = { model: modelName || 'agnes-video-v2.0', prompt: prompt, negative_prompt: negPrompt, num_frames: 81, frame_rate: 24 };
+  if (shot.image) payload.image = shot.image;
+  return payload;
+}
+
+// 按网关协议生成轮询端点列表
+function buildVideoPollEndpoints(provider, base, videoId) {
+  const u = (base || '').replace(/\/+$/, '');
+  const domainRoot = (u.match(/^https?:\/\/[^/]+/i) || [u])[0];
+  if (provider === 'minimax') return [u + '/query/video_generation?task_id=' + videoId, domainRoot + '/v1/query/video_generation?task_id=' + videoId];
+  if (provider === 'seedance') return [u + '/contents/generations/tasks/' + videoId];
+  const pollPaths = ['/agnesapi?video_id=' + videoId, '/v1/videos/' + videoId, '/v1/videos/generations/' + videoId, '/video/generations/' + videoId];
+  return pollPaths.map(p => domainRoot + p);
 }
 
 function extractVideoUrl(data) {
   return data.remixed_from_video_id ||
          data.metadata?.url ||
          data.output?.video_url || data.output?.url ||
+         data.content?.video_url ||
+         data.file?.download_url || data.download_url ||
          data.video_url || data.result?.video_url || data.result?.url ||
          (data.data && data.data[0] && (data.data[0].url || data.data[0].video)) ||
          data.video || data.url || '';
+}
+
+// 从网关错误响应中提取被拒绝的参数名（如 data.param: "height"）
+function extractErrorParam(errText) {
+  let param = '';
+  try {
+    const ej = JSON.parse(errText);
+    param = (ej.data && ej.data.param) || ej.param || '';
+  } catch(ignored) {}
+  if (!param) {
+    const m = String(errText).match(/"param"\s*:\s*"([^"]+)"/);
+    if (m) param = m[1];
+  }
+  return param;
 }
 
 function extractProgressInfo(data) {
@@ -1345,6 +1481,7 @@ function updateVideoStatus(status, msg) {
 async function generateShotVideo(index) {
   const shot = state.storyboard[index];
   if (!shot || !shot.prompt) { showToast('请先生成故事板内容', 'error'); return; }
+  if (shot.videoStatus === 'generating') { showToast('该分镜视频正在生成中', 'warning'); return; }
 
   const videoModel = state.models.video.find(m => m.id === state.selectedModels.video);
   if (!videoModel || !videoModel.key) { showToast('请先配置视频大模型API', 'error'); return; }
@@ -1365,57 +1502,85 @@ async function generateShotVideo(index) {
     const prompt = shot.prompt;
     const negPrompt = 'Avoid: text overlay, watermark, low quality, blurry, distorted';
 
-    // Step 1: Build request URL and submit
-    const createUrl = buildVideoCreateUrl(baseUrl);
-    const payload = {
-      model: videoModel.name || 'agnes-video-v2.0',
-      prompt: prompt,
-      negative_prompt: negPrompt,
-      width: getVideoDims()[0],
-      height: getVideoDims()[1],
-      num_frames: 121,
-      frame_rate: 24
-    };
-    // 有首帧图时随 payload 下发（image-to-video）；不支持的网关会忽略该字段
-    if (shot.image) { payload.image = shot.image; }
+    // Step 1: Build request URL and submit（按网关协议构造）
+    const provider = detectVideoProvider(baseUrl, videoModel.name);
+    const payload = buildVideoPayload(provider, videoModel.name, prompt, negPrompt, shot);
 
-    const endpointsToTry = [createUrl, baseUrl + '/v1/videos'];
+    const endpointsToTry = buildVideoCreateEndpoints(provider, baseUrl);
     vlog('info', '🎬 开始视频生成流程 | 分镜 ' + shot.id);
-    vlog('info', '模型: ' + (videoModel.name || 'agnes-video-v2.0') + ' | Base URL: ' + baseUrl);
+    vlog('info', 'Provider: ' + provider + ' | 模型: ' + (videoModel.name || '自动') + ' | Base URL: ' + baseUrl);
 
     let taskData = null;
-    let lastError = '';
+    const endpointErrors = [];
 
     for (const ep of endpointsToTry) {
-      try {
-        vlog('req', 'POST ' + ep, payload);
-        const response = await fetchWithTimeout(ep, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-          body: JSON.stringify(payload)
-        }, 180000);
+      // 同一端点内自适应重试：网关 400 指明禁止字段时剔除后重试
+      const currentPayload = { ...payload };
+      let rateRetries = 0;
+      let retrySameEndpoint = true;
+      while (retrySameEndpoint) {
+        retrySameEndpoint = false;
+        try {
+          vlog('req', 'POST ' + ep, currentPayload);
+          const response = await fetchWithTimeout(ep, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+            body: JSON.stringify(currentPayload)
+          }, 180000);
 
-        if (response.ok) {
-          taskData = await response.json();
-          vlog('resp', 'HTTP ' + response.status + ' ✓', taskData);
-          break;
-        } else {
+          if (response.ok) {
+            taskData = await response.json();
+            vlog('resp', 'HTTP ' + response.status + ' ✓', taskData);
+            break;
+          }
+
           const errText = await response.text().catch(() => '');
-          lastError = ep + ': ' + response.status + ' - ' + errText.substring(0, 200);
+          endpointErrors.push(ep + ': ' + response.status + ' - ' + errText.substring(0, 200));
+
+          if (response.status === 400) {
+            const badParam = extractErrorParam(errText);
+            if (badParam && badParam in currentPayload) {
+              delete currentPayload[badParam];
+              vlog('warning', '网关拒绝字段 "' + badParam + '"，已剔除并重试', errText.slice(0, 300));
+              retrySameEndpoint = true;
+              continue;
+            }
+          }
+
+          if (response.status === 429) {
+            if (rateRetries < 3) {
+              rateRetries++;
+              const waitSec = 30 * rateRetries;
+              vlog('warning', '触发限流(429)，' + waitSec + 's 后自动重试 (第' + rateRetries + '/3次)', errText.slice(0, 300));
+              await waitWithCountdown(waitSec, '触发免费档速率限制，分镜 ' + shot.id);
+              retrySameEndpoint = true;
+              continue;
+            }
+            throw new Error('API限流(429): 免费档视频约1次/分钟，已自动重试3次仍被限流。请等1分钟后再试，或升级套餐。' + errText.substring(0, 120));
+          }
+
           vlog('warning', '端点失败 ' + response.status + ': ' + ep, errText.slice(0, 300));
           if (response.status !== 403 && response.status !== 404 && response.status !== 405 && response.status !== 400) {
             throw new Error('API错误 (' + response.status + '): ' + errText.substring(0, 200));
           }
+        } catch(fetchErr) {
+          if (fetchErr.message.startsWith('API错误')) throw fetchErr;
+          endpointErrors.push(ep + ': ' + fetchErr.message);
+          vlog('warning', '网络错误: ' + ep, fetchErr.message);
         }
-      } catch(fetchErr) {
-        if (fetchErr.message.startsWith('API错误')) throw fetchErr;
-        lastError = ep + ': ' + fetchErr.message;
-        vlog('warning', '网络错误: ' + ep, fetchErr.message);
       }
+      if (taskData) break;
     }
 
-    if (!taskData) { vlog('error', '所有端点均失败', lastError); throw new Error('所有视频API端点均失败。最后错误: ' + lastError); }
+    if (!taskData) { vlog('error', '所有端点均失败', endpointErrors.join(' | ')); throw new Error('所有视频API端点均失败。各端点错误: ' + endpointErrors.join(' | ')); }
     vlog('data', '任务创建响应', taskData);
+
+    // MiniMax 特例：HTTP 200 但 base_resp.status_code > 0 表示请求失败
+    if (taskData.base_resp && taskData.base_resp.status_code > 0) {
+      const msg = taskData.base_resp.status_msg || ('status_code ' + taskData.base_resp.status_code);
+      vlog('error', 'MiniMax API错误: ' + msg, taskData);
+      throw new Error('MiniMax API错误: ' + msg);
+    }
 
     // Step 2: Extract task ID
     const videoId = taskData.video_id || taskData.task_id || taskData.id;
@@ -1440,16 +1605,9 @@ async function generateShotVideo(index) {
       }
     }
 
-    // Step 3: Poll for completion
-    const domainRoot = (baseUrl.match(/^https?:\/\/[^/]+/i) || [baseUrl])[0];
-    const pollPaths = [
-      '/agnesapi?video_id=' + videoId,
-      '/v1/videos/' + videoId,
-      '/v1/videos/generations/' + videoId,
-      '/video/generations/' + videoId,
-    ];
-    const pollEndpoints = pollPaths.map(p => domainRoot + p);
-    vlog('req', '轮询端点列表:', pollPaths.map(p => domainRoot + p));
+    // Step 3: Poll for completion（按网关协议生成轮询端点）
+    const pollEndpoints = buildVideoPollEndpoints(provider, baseUrl, videoId);
+    vlog('req', '轮询端点列表:', pollEndpoints);
 
     let videoUrl = '';
     let lastStatus = '';
@@ -1469,8 +1627,8 @@ async function generateShotVideo(index) {
         } catch(ignored) {}
       }
 
-      // Fallback: POST to agnesapi
-      if (!pollData) {
+      // Fallback: POST to agnesapi（仅 Agnes / 通用网关）
+      if (!pollData && (provider === 'agnes' || provider === 'generic')) {
         try {
           var postUrl = domainRoot + '/agnesapi?video_id=' + videoId + '&model_name=' + (videoModel.name || 'agnes-video-v2.0');
           var postResp = await fetchWithTimeout(postUrl, {
@@ -1487,6 +1645,21 @@ async function generateShotVideo(index) {
         continue;
       }
 
+      // MiniMax 特例：Success 后返回 file_id，需再调 file/retrieve 换取下载地址
+      if (provider === 'minimax' && /success|completed|done/i.test(String(pollData.status || '')) && !extractVideoUrl(pollData)) {
+        const fid = pollData.file_id || (pollData.file && pollData.file.file_id) || '';
+        if (fid) {
+          try {
+            const frResp = await fetchWithTimeout(baseUrl.replace(/\/+$/, '') + '/file/retrieve?file_id=' + fid, { headers: { 'Authorization': 'Bearer ' + apiKey } }, 30000);
+            if (frResp.ok) {
+              const frData = await frResp.json();
+              const dl = frData.file && frData.file.download_url;
+              if (dl) { pollData.video_url = dl; vlog('info', 'MiniMax file/retrieve 获取到下载地址'); }
+            }
+          } catch(ignored) {}
+        }
+      }
+
       var info = extractProgressInfo(pollData);
       var status = (pollData.status || info.status || '').toLowerCase();
 
@@ -1499,7 +1672,7 @@ async function generateShotVideo(index) {
       if (info.percent > 0) vlogProgress(info.percent, '已等待 ' + formatElapsed(elapsed));
       else if (attempt % 10 === 0) vlog('poll', '第' + pollCount + '次查询 | status: ' + status + ' | ' + formatElapsed(elapsed));
 
-      var isComplete = status === 'completed' || status === 'done' || status === 'success' || info.percent >= 100;
+      var isComplete = status === 'completed' || status === 'done' || status === 'success' || status === 'succeeded' || info.percent >= 100;
       if (isComplete) {
         videoUrl = extractVideoUrl(pollData);
         if (videoUrl) { vlog('success', '视频URL: ' + videoUrl); break; }
@@ -1544,8 +1717,18 @@ function randomDemo() {
     '末日废土上，两个孩子发现了一台还能播放音乐的留声机，音乐改变了周围人的表情，也改变了这个灰暗世界的一角',
     '赛博朋克都市里，一位黑客正在破解最后一道防火墙，屏幕上数据流如瀑布，突然系统AI开口说话了，对话改变了一切'
   ];
-  document.getElementById('storyInput').value = demos[Math.floor(Math.random() * demos.length)];
-  showToast('已填入示例故事，点击生成试试！', 'info');
+  const story = demos[Math.floor(Math.random() * demos.length)];
+  document.getElementById('storyInput').value = story;
+  const specType = document.getElementById('specType').value;
+  const specRatio = document.getElementById('specRatio').value;
+  const specStyle = document.getElementById('specStyle').value;
+  const specColor = document.getElementById('specColor').value;
+  state.storyboard = generateDemoShots(story, specType, specStyle, specColor, specRatio);
+  saveState();
+  renderStoryboard();
+  updatePromptOutput();
+  updateTimeline();
+  showToast('已生成演示故事板；配置模型后点「AI 生成故事板」可切换为 AI 版本', 'success');
 }
 
 // ====== Export Functions ======
@@ -1592,10 +1775,14 @@ ${cellsHtml}
 async function exportImages() {
   if (state.storyboard.length === 0) { showToast('请先生成故事板', 'error'); return; }
   try {
+    showToast('正在合成故事板总图...', 'info');
+    // 预加载已生成的分镜图片；跨域不通过或已过期的 URL 会回退为占位图
+    const loadedImages = await Promise.all(state.storyboard.map(s => s.image ? loadImageForCanvas(s.image) : Promise.resolve(null)));
+
     const canvas = document.createElement('canvas');
     const cols = 3;
     const rows = Math.max(3, Math.ceil(state.storyboard.length / cols));
-    const cellW = 400, cellH = 280, padding = 16, headerH = 80;
+    const cellW = 400, cellH = 500, padding = 16, headerH = 80;
     canvas.width = cols * cellW + (cols + 1) * padding;
     canvas.height = rows * cellH + (rows + 1) * padding + headerH;
     const ctx = canvas.getContext('2d');
@@ -1608,18 +1795,41 @@ async function exportImages() {
       const x = padding + col * (cellW + padding), y = headerH + padding + row * (cellH + padding);
       ctx.fillStyle = '#1a1a2e'; ctx.strokeStyle = '#2d2d44'; ctx.lineWidth = 1;
       roundRect(ctx, x, y, cellW, cellH, 8);
-      ctx.fillStyle = '#6c5ce7'; ctx.beginPath(); ctx.arc(x + 20, y + 20, 12, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(shot.id, x + 20, y + 24); ctx.textAlign = 'left';
-      ctx.fillStyle = '#a29bfe'; ctx.font = 'bold 12px sans-serif'; ctx.fillText(`镜头 ${shot.id} | ${shot.timecode}`, x + 38, y + 24);
-      ctx.fillStyle = '#8a8a9a'; ctx.font = '11px sans-serif'; ctx.fillText(`📷 ${shot.camera}  🔊 ${shot.sound}`, x + 12, y + 48);
-      ctx.fillStyle = '#e0e0e0'; ctx.font = '11px sans-serif'; wrapText(ctx, shot.description, x + 12, y + 70, cellW - 24, 16, 6);
-      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x + 8, y + 168, cellW - 16, 80);
-      ctx.fillStyle = '#81ecec'; ctx.font = '10px monospace'; wrapText(ctx, shot.prompt, x + 12, y + 180, cellW - 24, 14, 4);
+      // 画面区：优先绘制已生成的分镜图片，缺失时绘制渐变占位
+      const imgX = x + 12, imgY = y + 12, imgW = cellW - 24, imgH = 200;
+      const img = loadedImages[i];
+      if (img) {
+        const scale = Math.max(imgW / img.width, imgH / img.height);
+        const dw = img.width * scale, dh = img.height * scale;
+        ctx.save();
+        roundRectPath(ctx, imgX, imgY, imgW, imgH, 6); ctx.clip();
+        ctx.drawImage(img, imgX + (imgW - dw) / 2, imgY + (imgH - dh) / 2, dw, dh);
+        ctx.restore();
+      } else {
+        const hue = (shot.id * 40) % 360;
+        const g = ctx.createLinearGradient(imgX, imgY, imgX + imgW, imgY + imgH);
+        g.addColorStop(0, `hsl(${hue}, 50%, 18%)`); g.addColorStop(1, `hsl(${(hue + 60) % 360}, 50%, 10%)`);
+        ctx.fillStyle = g; ctx.fillRect(imgX, imgY, imgW, imgH);
+        ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.font = 'bold 64px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(shot.id, imgX + imgW / 2, imgY + imgH / 2 + 22); ctx.textAlign = 'left';
+      }
+      ctx.strokeStyle = '#2d2d44'; ctx.strokeRect(imgX, imgY, imgW, imgH);
+      ctx.fillStyle = '#a29bfe'; ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(`镜头 ${shot.id} | ${shot.timecode}`, x + 12, y + 238);
+      ctx.fillStyle = '#8a8a9a'; ctx.font = '11px sans-serif';
+      ctx.fillText(`📷 ${shot.camera}  🔊 ${shot.sound}`, x + 12, y + 258);
+      ctx.fillStyle = '#e0e0e0'; ctx.font = '11px sans-serif';
+      wrapText(ctx, shot.description, x + 12, y + 280, cellW - 24, 16, 5);
+      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x + 8, y + 368, cellW - 16, 108);
+      ctx.fillStyle = '#81ecec'; ctx.font = '10px monospace'; wrapText(ctx, shot.prompt, x + 12, y + 384, cellW - 24, 14, 7);
     });
     ctx.fillStyle = '#8a8a9a'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('源码出自：公众号路上侠客，由畅有趣开源并发布 浙ICP备2024105328号', canvas.width / 2, canvas.height - 12);
 
-    canvas.toBlob(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'storyboard.png'; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 1000); showToast('已导出故事板图片', 'success'); }, 'image/png');
+    canvas.toBlob(blob => {
+      if (!blob) { showToast('图片导出失败：部分画面受跨域限制，无法合成总图', 'error'); return; }
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'storyboard.png'; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 1000); showToast('已导出故事板总图（含分镜画面）', 'success');
+    }, 'image/png');
   } catch(e) { showToast('图片导出失败: ' + e.message, 'error'); }
 }
 
@@ -1655,11 +1865,26 @@ function exportAllShotImages() {
   showToast(`正在导出 ${shotsWithImages.length} 张分镜图片...`, 'success');
 }
 
-function roundRect(ctx, x, y, w, h, r) {
+// 圆角路径（仅描边，可复用于 clip）
+function roundRectPath(ctx, x, y, w, h, r) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
   ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h);
   ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.closePath();
+}
+function roundRect(ctx, x, y, w, h, r) { roundRectPath(ctx, x, y, w, h, r); ctx.fill(); ctx.stroke(); }
+
+// 加载图片用于 Canvas 合成；跨域失败或超时返回 null（由调用方绘制占位）
+function loadImageForCanvas(src, timeoutMs = 8000) {
+  return new Promise(resolve => {
+    if (!src) { resolve(null); return; }
+    const img = new Image();
+    if (!src.startsWith('data:')) img.crossOrigin = 'anonymous';
+    const timer = setTimeout(() => { img.onload = img.onerror = null; resolve(null); }, timeoutMs);
+    img.onload = () => { clearTimeout(timer); resolve(img); };
+    img.onerror = () => { clearTimeout(timer); resolve(null); };
+    img.src = src;
+  });
 }
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
@@ -1689,10 +1914,11 @@ async function exportVideo() {
       if (shot.image) {
         try {
           const img = await new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = () => resolve(null);
-            img.src = shot.image;
+          const img = new Image();
+          if (!shot.image.startsWith('data:')) img.crossOrigin = 'anonymous';
+          img.onload = () => resolve(img);
+          img.onerror = () => resolve(null);
+          img.src = shot.image;
           });
           loadedImages[i] = img;
         } catch(e) { loadedImages[i] = null; }

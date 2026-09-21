@@ -216,3 +216,14 @@ body {
 .cell-video-status.generating { background: rgba(108,92,231,0.15); color: var(--primary-light); }
 .cell-video-status.done { background: rgba(0,184,148,0.15); color: var(--success); }
 .cell-video-status.error { background: rgba(225,112,85,0.15); color: var(--danger); }
+
+/* Model presets */
+.preset-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.preset-label { font-size: 12px; color: var(--text-dim); }
+.preset-row .btn { font-size: 11px; padding: 4px 10px; }
+
+/* Empty state */
+.empty-state { grid-column: 1 / -1; text-align: center; padding: 72px 20px; border: 1px dashed var(--border); border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); }
+.empty-state .empty-icon { font-size: 44px; margin-bottom: 12px; }
+.empty-state .empty-title { font-size: 16px; font-weight: 600; color: var(--text-bright); margin-bottom: 6px; }
+.empty-state .empty-desc { font-size: 13px; color: var(--text-dim); max-width: 420px; margin: 0 auto; }
