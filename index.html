@@ -1479,10 +1479,16 @@ async function mergeVideosFfmpeg() {
       } catch (e) { /* CORS 拦截，走 agnesapi */ }
 
       // 2) /agnesapi 换取（该端点允许跨域且带鉴权；可能直接回视频流/base64，或 JSON 里带可下载 url）
-      const agnesOk = /agnes/i.test(baseUrl) || /agnes/i.test(videoModelName || '');
-      if (agnesOk && videoId) {
+      //    videoId 取值优先级：shot.videoId > URL 路径/参数中提取（旧数据兼容）
+      let vid = videoId || '';
+      if (!vid) {
+        const m = String(url).match(/(?:video_id|task_id|\/videos\/|\/video\/generations\/)([A-Za-z0-9_-]{6,})/i);
+        if (m) vid = m[1];
+      }
+      const agnesOk = (/agnes/i.test(baseUrl) || /agnes/i.test(videoModelName || '')) && !!vid;
+      if (agnesOk) {
         const root = (baseUrl.match(/^https?:\/\/[^/]+/i) || [baseUrl])[0];
-        const api = root + '/agnesapi?video_id=' + encodeURIComponent(videoId) + '&model_name=' + encodeURIComponent(videoModelName || 'agnes-video-v2.0');
+        const api = root + '/agnesapi?video_id=' + encodeURIComponent(vid) + '&model_name=' + encodeURIComponent(videoModelName || 'agnes-video-v2.0');
         try {
           const resp = await fetch(api, { headers: { 'Authorization': 'Bearer ' + apiKey } });
           if (resp.ok) {
@@ -1508,13 +1514,11 @@ async function mergeVideosFfmpeg() {
         } catch (e) { vlog('warning', '分镜 ' + shotId + ' agnesapi 换取失败: ' + e.message); }
       }
 
-      // 3) <video> 转录兜底（需要视频源至少允许带凭据播放）
-      vlog('warning', '分镜 ' + shotId + ' 直链下载被跨域拦截，改用转录模式（需实时播放一遍）');
-      showToast(`⏳ 分镜 ${shotId} 跨域受限，改用转录模式（实时播放中，请稍候）...`, 'info');
+      // 3) <video> 转录兜底（不带 crossOrigin——部分 CDN 只拒绝匿名凭据播放）
+      vlog('warning', '分镜 ' + shotId + ' 直链/agnesapi 均未取得数据，尝试转录模式（实时播放一遍）');
+      showToast(`⏳ 分镜 ${shotId} 改用转录模式（实时播放中，请稍候）...`, 'info');
       return await new Promise((resolve, reject) => {
         const v = document.createElement('video');
-        v.crossOrigin = 'anonymous';
-        v.src = url;
         v.muted = true;
         v.playsInline = true;
         v.preload = 'auto';
@@ -1537,6 +1541,7 @@ async function mergeVideosFfmpeg() {
           } catch (err) { fail(err.message); }
         };
         v.onerror = () => fail('视频加载失败');
+        v.src = url; // crossOrigin 已移除： tainted captureStream 会在 MediaRecorder 处失败，先试无凭据播放
       });
     }
 
