@@ -1418,9 +1418,13 @@ function buildVideoPayload(provider, modelName, prompt, negPrompt, shot) {
     if (shot.image) payload.first_frame_image = shot.image;
     return payload;
   }
-  // Agnes：网关只接受 {model, prompt, mode, image_urls?}，禁止 frame_rate/negative_prompt/num_frames
-  const payload = { model: modelName || 'agnes-video-v2.0', prompt: prompt, mode: shot.image ? 'image2video' : 'text2video' };
-  if (shot.image) payload.image_urls = [shot.image];
+  // Agnes Video 2.5 系列新参数格式：禁止 width/height/num_frames/frame_rate/negative_prompt/image；
+  // 只支持 mode(text|keyframe|reference)/seconds/size/aspect_ratio/first_frame（与官方 Studio 一致）
+  const payload = { model: modelName || 'agnes-video-v2.0', prompt: prompt };
+  if (shot.image) { payload.mode = 'keyframe'; payload.first_frame = shot.image; }
+  else { payload.mode = 'text'; }
+  payload.seconds = 5;
+  payload.size = '720P';
   return payload;
 }
 
@@ -1616,7 +1620,8 @@ async function generateShotVideo(index, keyOverride) {
             const badParam = extractErrorParam(errText);
             if (badParam && badParam in currentPayload) {
               delete currentPayload[badParam];
-              if (badParam === 'image_urls') currentPayload.mode = 'text2video';
+              if (badParam === 'first_frame') currentPayload.mode = 'text';
+              if (badParam === 'seconds' || badParam === 'size') { delete currentPayload.seconds; delete currentPayload.size; }
               vlog('warning', '网关拒绝字段 "' + badParam + '"，已剔除并重试', errText.slice(0, 300));
               retrySameEndpoint = true;
               continue;
