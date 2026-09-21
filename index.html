@@ -94,6 +94,9 @@
           <button class="export-item" onclick="event.stopPropagation();exportAllShotImages()">🖼️ 导出所有分镜图片</button>
           <button class="export-item" onclick="event.stopPropagation();exportVideoURLs()">🔗 导出视频URL地址 (TXT)</button>
           <button class="export-item" onclick="event.stopPropagation();exportImageURLs()">🖼️ 导出分镜图片URL地址 (TXT)</button>
+          <div class="export-divider"></div>
+          <button class="export-item" onclick="event.stopPropagation();startSequentialPreview()">▶️ 连播预览（按分镜顺序）</button>
+          <button class="export-item" id="mergeFfmpegBtn" onclick="event.stopPropagation();mergeVideosFfmpeg()">🎬 合并成片 MP4（电脑端）</button>
         </div>
       </div>
     </div>
@@ -1300,6 +1303,126 @@ function exportVideoURLs() {
   });
   downloadFile('storyboard_video_urls.txt', txt, 'text/plain');
   showToast(`已导出 ${shotsWithVideo.length} 个视频URL`, 'success');
+}
+
+// ====== 连播预览：按分镜顺序在弹层中连续播放已生成的视频 ======
+function startSequentialPreview() {
+  const shots = state.storyboard.filter(s => s.video && s.videoStatus === 'done');
+  if (shots.length === 0) { showToast('没有已生成的分镜视频，请先生成视频', 'error'); return; }
+
+  const existing = document.getElementById('seqPreviewOverlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'seqPreviewOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML = `
+    <div style="position:absolute;top:16px;left:50%;transform:translateX(-50%);color:#fff;font-size:14px;background:rgba(255,255,255,.12);padding:6px 14px;border-radius:20px;" id="seqPreviewInfo">连播预览 1/${shots.length}</div>
+    <button style="position:absolute;top:14px;right:18px;background:rgba(255,255,255,.15);border:0;color:#fff;font-size:22px;width:40px;height:40px;border-radius:50%;cursor:pointer;" onclick="document.getElementById('seqPreviewOverlay').remove()">✕</button>
+    <video id="seqPreviewPlayer" style="max-width:92vw;max-height:80vh;border-radius:10px;background:#000;" autoplay controls></video>
+    <div style="color:#8b8fa8;font-size:12px;margin-top:10px;">按分镜顺序自动连播 · 共 ${shots.length} 段</div>`;
+  document.body.appendChild(overlay);
+
+  const player = overlay.querySelector('#seqPreviewPlayer');
+  const info = overlay.querySelector('#seqPreviewInfo');
+  let idx = 0;
+  player.src = shots[0].video;
+  player.play().catch(() => {});
+  player.addEventListener('ended', () => {
+    idx++;
+    if (idx >= shots.length) {
+      info.textContent = '✅ 连播结束（共 ' + shots.length + ' 段）';
+      return;
+    }
+    info.textContent = '连播预览 ' + (idx + 1) + '/' + shots.length + '（分镜 ' + shots[idx].id + '）';
+    player.src = shots[idx].video;
+    player.play().catch(() => {});
+  });
+  info.textContent = '连播预览 1/' + shots.length + '（分镜 ' + shots[0].id + '）';
+}
+
+// ====== 合并成片：ffmpeg.wasm 浏览器内按分镜顺序拼接为单个 MP4（仅桌面端） ======
+let ffmpegLoadPromise = null;
+function loadFfmpegCore() {
+  if (window.FFmpegWASM && window.FFmpegWASM.createFFmpeg) return Promise.resolve(window.FFmpegWASM);
+  if (!ffmpegLoadPromise) {
+    ffmpegLoadPromise = new Promise((resolve, reject) => {
+      const base = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
+      script.onload = () => {
+        const ffmpeg = window.FFmpegWASM.createFFmpeg({
+          corePath: base + '/ffmpeg-core.js',
+          wasmPath: base + '/ffmpeg-core.wasm',
+          log: false
+        });
+        ffmpeg.load().then(() => resolve(ffmpeg)).catch(reject);
+      };
+      script.onerror = () => reject(new Error('ffmpeg.wasm 加载失败，请检查网络'));
+      document.head.appendChild(script);
+    });
+    ffmpegLoadPromise.catch(() => { ffmpegLoadPromise = null; });
+  }
+  return ffmpegLoadPromise;
+}
+
+async function mergeVideosFfmpeg() {
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  if (isMobile) { showToast('📱 合并成片需要在电脑端浏览器使用（内存占用较大），手机请使用连播预览或逐段下载', 'warning'); return; }
+
+  const shots = state.storyboard.filter(s => s.video && s.videoStatus === 'done');
+  if (shots.length < 2) { showToast('至少需要 2 个已生成的分镜视频才能合并', 'error'); return; }
+
+  const btn = document.getElementById('mergeFfmpegBtn');
+  const confirmText = `将按分镜顺序（${shots.map(s => s.id).join(' → ')}）合并 ${shots.length} 段视频为单个 MP4。\n\n需要先加载约 25MB 合并内核（首次较慢，之后浏览器有缓存），合并期间请勿关闭页面。继续？`;
+  if (!confirm(confirmText)) return;
+  btn.disabled = true;
+
+  try {
+    showToast('⏳ 正在加载合并内核（首次约 25MB，请稍候）...', 'info');
+    const ffmpeg = await loadFfmpegCore();
+
+    // 拉取各段视频并写入 wasm 虚拟文件系统（MP4 需要 https 直链且允许跨域）
+    const files = [];
+    for (let i = 0; i < shots.length; i++) {
+      const s = shots[i];
+      showToast(`⏳ 下载分镜 ${s.id} 视频 (${i + 1}/${shots.length})...`, 'info');
+      let buf;
+      if (s.video.startsWith('data:')) {
+        const b64 = s.video.split(',')[1];
+        buf = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      } else {
+        const resp = await fetch(s.video);
+        if (!resp.ok) throw new Error(`分镜 ${s.id} 视频下载失败 (HTTP ${resp.status})。若为跨域限制，请先用"导出视频URL地址"下载到本地`);
+        buf = new Uint8Array(await resp.arrayBuffer());
+      }
+      const name = 'seg' + String(i).padStart(2, '0') + '.mp4';
+      ffmpeg.FS('writeFile', name, buf);
+      files.push(name);
+    }
+
+    showToast('🔧 正在合并（无损拼接，长视频需几分钟）...', 'info');
+    const args = [];
+    files.forEach(f => args.push('-i', f));
+    const filter = files.map((_, i) => `[${i}:v]`).join('') + `concat=n=${files.length}:v=1:a=0`;
+    args.push('-filter_complex', filter, '-preset', 'ultrafast', 'output.mp4');
+    await ffmpeg.run(...args);
+
+    const data = ffmpeg.FS('readFile', 'output.mp4');
+    const blob = new Blob([data.buffer], { type: 'video/mp4' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'storyboard_merged.mp4'; a.target = '_blank'; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    showToast('✅ 合并完成，已开始下载 storyboard_merged.mp4', 'success');
+
+    try { files.forEach(f => ffmpeg.FS('unlink', f)); ffmpeg.FS('unlink', 'output.mp4'); } catch(e) {}
+  } catch(e) {
+    showToast('❌ 合并失败: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function exportImageURLs() {
