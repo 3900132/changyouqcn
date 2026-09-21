@@ -1326,25 +1326,39 @@ function exportMergeScript() {
   const batLines = [
     '@echo off', 'chcp 65001 >nul', 'echo === 畅有趣故事板 本地合并脚本 (Windows) ===',
     'echo 需要已安装 ffmpeg；如未安装请先执行: winget install ffmpeg', 'echo.', 'cd /d "%~dp0"',
-    ...list.map(f => `echo 下载分镜 ${f.id} ...& curl -L -o seg${f.n}.mp4 "${f.url}"`),
+    'where ffmpeg >nul 2>nul || (echo [错误] 未检测到 ffmpeg，请先执行: winget install ffmpeg & pause & exit /b 1)',
+    ...list.map(f => `echo 下载分镜 ${f.id} ...& curl -L --fail -o seg${f.n}.mp4 "${f.url}" || (echo [错误] 分镜 ${f.id} 下载失败（可能链接已过期）& pause & exit /b 1)`),
     'echo 正在拼接 ...',
     `ffmpeg -y ${list.map((_, i) => `-i seg${String(i + 1).padStart(2, '0')}.mp4`).join(' ')} -filter_complex "${list.map((_, i) => `[${i}:v]`).join('')}concat=n=${list.length}:v=1:a=0" -preset ultrafast storyboard_merged.mp4`,
-    'del seg*.mp4', 'echo.', 'echo ✅ 完成！成片: storyboard_merged.mp4', 'pause'
+    'if errorlevel 1 (echo [错误] ffmpeg 拼接失败，分段文件已保留在当前文件夹 & pause & exit /b 1)',
+    'del seg*.mp4', 'echo.', 'echo 完成！成片: storyboard_merged.mp4（位于本脚本所在文件夹）', 'pause'
   ];
 
   const shLines = [
     '#!/usr/bin/env bash', '# 畅有趣故事板 本地合并脚本 (macOS/Linux)',
     '# 需要已安装 ffmpeg（macOS: brew install ffmpeg / Ubuntu: sudo apt install ffmpeg）',
     'set -e', 'cd "$(dirname "$0")"',
-    ...list.map(f => `echo "下载分镜 ${f.id} ..."; curl -L -o seg${f.n}.mp4 "${f.url}"`),
+    'command -v ffmpeg >/dev/null || { echo "[错误] 未检测到 ffmpeg"; exit 1; }',
+    ...list.map(f => `echo "下载分镜 ${f.id} ..."; curl -L --fail -o seg${f.n}.mp4 "${f.url}"`),
     'echo "正在拼接 ..."',
     `ffmpeg -y ${list.map((_, i) => `-i seg${String(i + 1).padStart(2, '0')}.mp4`).join(' ')} -filter_complex "${list.map((_, i) => `[${i}:v]`).join('')}concat=n=${list.length}:v=1:a=0" -preset ultrafast storyboard_merged.mp4`,
-    'rm -f seg*.mp4', 'echo "✅ 完成！成片: storyboard_merged.mp4"'
+    'rm -f seg*.mp4', 'echo "完成！成片: storyboard_merged.mp4"'
   ];
 
-  downloadFile('merge_windows.bat', batLines.join('\r\n'), 'text/plain');
-  setTimeout(() => downloadFile('merge_mac_linux.sh', shLines.join('\n'), 'text/plain'), 400);
-  showToast(`✅ 已导出合并脚本（Windows + Mac/Linux 各一份，共 ${list.length} 段视频）`, 'success');
+  const isWin = /Windows/i.test(navigator.userAgent);
+  const isMac = /Macintosh|Mac OS X/i.test(navigator.userAgent) && !/iPhone|iPad/i.test(navigator.userAgent);
+
+  if (isWin) {
+    downloadFile('merge_windows.bat', batLines.join('\r\n'), 'text/plain');
+    showToast(`✅ 已导出 merge_windows.bat（Windows 版，共 ${list.length} 段视频）——放到空文件夹双击运行，需已安装 ffmpeg`, 'success');
+  } else if (isMac) {
+    downloadFile('merge_mac.command', shLines.join('\n'), 'text/plain');
+    showToast(`✅ 已导出 merge_mac.command（macOS 版，共 ${list.length} 段视频）——需已安装 ffmpeg`, 'success');
+  } else {
+    downloadFile('merge_windows.bat', batLines.join('\r\n'), 'text/plain');
+    setTimeout(() => downloadFile('merge_mac_linux.sh', shLines.join('\n'), 'text/plain'), 400);
+    showToast(`✅ 已导出合并脚本（Windows + Mac/Linux 各一份，共 ${list.length} 段视频）`, 'success');
+  }
 }
 
 // ====== 连播预览：按分镜顺序在弹层中连续播放已生成的视频 ======
