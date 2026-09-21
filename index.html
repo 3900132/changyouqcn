@@ -1345,12 +1345,13 @@ function exportMergeScript() {
 
   // PowerShell 安装脚本：前端直接生成完整 .ps1 一并导出（Base64 编码防止任何转义问题），
   // bat 只负责 certutil 解码后执行 —— 零转义、任何 Windows 版本行为一致
+  // 下载源用 npmmirror 阿里 CDN 的 ffmpeg-static 单文件 exe（国内实测 ~6.7MB/s，比 gyan.dev 快 15 倍+）
   const ps1Content = [
     "$ErrorActionPreference = 'Stop'",
     "$ProgressPreference = 'SilentlyContinue'",
     "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12",
-    "$u = 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip'",
-    "$o = 'ffmpeg.zip'",
+    "$u = 'https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.0/ffmpeg-win32-x64'",
+    "$o = 'ffmpeg.exe'",
     "Write-Host ('下载 ffmpeg 内核: ' + $u)",
     "$r = [Net.HttpWebRequest]::Create($u)",
     "$resp = $r.GetResponse()",
@@ -1371,34 +1372,25 @@ function exportMergeScript() {
     "  }",
     "}",
     "$fs.Close(); $s.Close(); $resp.Close(); Write-Host ''",
-    "Write-Host '下载完成，正在解压（约 10~30 秒）...'",
-    "Expand-Archive -Path $o -DestinationPath 'ffmpeg_tmp' -Force",
-    "Remove-Item $o -Force",
-    "Write-Host '解压完成'"
+    "Write-Host '下载完成'"
   ].join('\r\n') + '\r\n';
   const ps1B64 = btoa(unescape(encodeURIComponent(ps1Content)));
 
   const batLines = [
     '@echo off', 'chcp 65001 >nul', 'echo === 畅有趣故事板 本地合并脚本 (Windows) ===', 'echo.', 'cd /d "%~dp0"',
-    'set "FF=ffmpeg"',
-    'if exist "ffmpeg\\bin\\ffmpeg.exe" set "FF=%~dp0ffmpeg\\bin\\ffmpeg.exe" & set "PATH=%~dp0ffmpeg\\bin;%PATH%"',
-    'where ffmpeg >nul 2>nul && goto :have_ffmpeg',
-    'if exist "ffmpeg\\bin\\ffmpeg.exe" goto :have_ffmpeg',
+    'set "FF=%~dp0ffmpeg.exe"',
+    'if exist "ffmpeg.exe" goto :have_ff',
+    'where ffmpeg >nul 2>nul && (set "FF=ffmpeg" & goto :have_ff)',
     'echo.',
-    'echo 未检测到 ffmpeg，开始自动下载（约 80MB，全程自动，无需操作）...',
+    'echo 未检测到 ffmpeg，开始自动下载（约 77MB，全程自动，无需操作）...',
     'echo.',
     // 解码随脚本导出的 ps1 安装器并执行（Base64 传输，无任何转义风险）
     ...chunkB64(ps1B64).map((chunk) => `<nul set /p="${chunk}">>ps1_b64.txt`),
     'certutil -f -decode ps1_b64.txt dl_ffmpeg.ps1 >nul',
     'powershell -NoProfile -ExecutionPolicy Bypass -File dl_ffmpeg.ps1',
     'del ps1_b64.txt dl_ffmpeg.ps1 2>nul',
-    'if not exist ffmpeg.zip (echo [错误] 内核下载失败，请检查网络后重试，或手动下载：https://www.gyan.dev/ffmpeg/builds/ & pause & exit /b 1)',
-    'for /d %%D in (ffmpeg_tmp\\*) do robocopy "%%D\\bin" ffmpeg\\bin /e >nul',
-    'rmdir /s /q ffmpeg_tmp',
-    'if exist "ffmpeg\\bin\\ffmpeg.exe" (set "FF=%~dp0ffmpeg\\bin\\ffmpeg.exe" & set "PATH=%~dp0ffmpeg\\bin;%PATH%" & goto :have_ffmpeg)',
-    'echo [错误] 自动安装失败，请手动下载：https://www.gyan.dev/ffmpeg/builds/',
-    'pause & exit /b 1',
-    ':have_ffmpeg',
+    'if not exist "ffmpeg.exe" (echo [错误] 内核下载失败，请检查网络后重试，或手动下载 ffmpeg.exe 放到本脚本同目录 & pause & exit /b 1)',
+    ':have_ff',
     'echo ffmpeg 就绪，开始处理...', 'echo.',
     ...list.map(f => `echo [${f.n}/${list.length}] 下载分镜 ${f.id} ...& curl -L --fail --progress-bar -o seg${f.n}.mp4 "${f.url}" || (echo [错误] 分镜 ${f.id} 下载失败（可能链接已过期）& pause & exit /b 1)`),
     'echo 正在无损拼接（进度百分比来自 ffmpeg，长视频需几分钟）...',
