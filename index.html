@@ -391,6 +391,13 @@
         <li><strong>第三步：输入故事内容</strong> — 在创作输入区填写故事描述、剧本片段或场景需求</li>
         <li><strong>第四步：点击生成</strong> — 点击"AI 生成故事板"按钮，AI会自动展开完整故事情节；未配置模型时可点「🎲 演示」一键查看本地示例</li>
         <li><strong>第五步：生成图片/视频</strong> — 在每个分镜格中点击"生图"或"生视频"按钮生成对应媒体</li>
+        <li><strong>第六步：合成成片</strong> — 通过「导出」菜单使用"连播预览"按顺序播放全部分镜视频，或在电脑端使用"合并成片 MP4"一键拼接下载完整成片</li>
+      </ul>
+      <h3>🔑 多 Key 使用模式</h3>
+      <ul>
+        <li><strong>多 Key 配置</strong> — 视频大模型的 API Key 栏可填多个 Key（逗号/分号/换行分隔）</li>
+        <li><strong>单线程轮流</strong> — 每次请求轮流使用不同 Key，把限流压力分摊到各 Key，适合免费档限流场景</li>
+        <li><strong>多线程并行</strong> — 批量生成时每个 Key 启动一条线程同时生成（线程数 = Key 数量），大幅提升批量吞吐</li>
       </ul>
       <h3>🎬 输出内容说明</h3>
       <ul>
@@ -409,6 +416,8 @@
         <li><strong>所有分镜图片</strong> — 逐个导出每个分镜生成的图片</li>
         <li><strong>视频URL地址</strong> — 导出所有成功生成的分镜视频URL至TXT文档</li>
         <li><strong>分镜图片URL地址</strong> — 导出所有成功生成的分镜图片URL至TXT文档</li>
+        <li><strong>连播预览</strong> — 按分镜顺序自动连续播放所有已生成视频，手机/电脑均可用</li>
+        <li><strong>合并成片 MP4（电脑端）</strong> — 浏览器内无损拼接全部分镜视频为单个MP4并下载；首次使用需加载约25MB内核，纯本地处理不消耗API额度，移动端请使用连播预览</li>
       </ul>
       <h3>🖼️ 批量生成功能</h3>
       <ul>
@@ -1343,24 +1352,37 @@ function startSequentialPreview() {
 
 // ====== 合并成片：ffmpeg.wasm 浏览器内按分镜顺序拼接为单个 MP4（仅桌面端） ======
 let ffmpegLoadPromise = null;
+async function toBlobURL(url, mime) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('内核资源下载失败: ' + url);
+  const buf = await resp.arrayBuffer();
+  return URL.createObjectURL(new Blob([buf], { type: mime }));
+}
 function loadFfmpegCore() {
-  if (window.FFmpegWASM && window.FFmpegWASM.createFFmpeg) return Promise.resolve(window.FFmpegWASM);
+  if (window.FFmpegWASM && window.FFmpegWASM.FFmpeg && window.__ffmpegReady) return Promise.resolve(window.__ffmpegReady);
   if (!ffmpegLoadPromise) {
-    ffmpegLoadPromise = new Promise((resolve, reject) => {
-      const base = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
-      script.onload = () => {
-        const ffmpeg = window.FFmpegWASM.createFFmpeg({
-          corePath: base + '/ffmpeg-core.js',
-          wasmPath: base + '/ffmpeg-core.wasm',
-          log: false
+    ffmpegLoadPromise = (async () => {
+      if (!window.FFmpegWASM || !window.FFmpegWASM.FFmpeg) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('ffmpeg.wasm 脚本加载失败，请检查网络'));
+          document.head.appendChild(script);
         });
-        ffmpeg.load().then(() => resolve(ffmpeg)).catch(reject);
-      };
-      script.onerror = () => reject(new Error('ffmpeg.wasm 加载失败，请检查网络'));
-      document.head.appendChild(script);
-    });
+      }
+      if (!window.FFmpegWASM || !window.FFmpegWASM.FFmpeg) throw new Error('ffmpeg.wasm 初始化失败（未找到 FFmpeg 类）');
+      const ffmpeg = new window.FFmpegWASM.FFmpeg();
+      ffmpeg.on('log', () => {});
+      const base = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      const [coreURL, wasmURL] = await Promise.all([
+        toBlobURL(base + '/ffmpeg-core.js', 'text/javascript'),
+        toBlobURL(base + '/ffmpeg-core.wasm', 'application/wasm')
+      ]);
+      await ffmpeg.load({ coreURL, wasmURL });
+      window.__ffmpegReady = ffmpeg;
+      return ffmpeg;
+    })();
     ffmpegLoadPromise.catch(() => { ffmpegLoadPromise = null; });
   }
   return ffmpegLoadPromise;
@@ -1397,7 +1419,7 @@ async function mergeVideosFfmpeg() {
         buf = new Uint8Array(await resp.arrayBuffer());
       }
       const name = 'seg' + String(i).padStart(2, '0') + '.mp4';
-      ffmpeg.FS('writeFile', name, buf);
+      await ffmpeg.writeFile(name, buf);
       files.push(name);
     }
 
@@ -1406,9 +1428,9 @@ async function mergeVideosFfmpeg() {
     files.forEach(f => args.push('-i', f));
     const filter = files.map((_, i) => `[${i}:v]`).join('') + `concat=n=${files.length}:v=1:a=0`;
     args.push('-filter_complex', filter, '-preset', 'ultrafast', 'output.mp4');
-    await ffmpeg.run(...args);
+    await ffmpeg.exec(args);
 
-    const data = ffmpeg.FS('readFile', 'output.mp4');
+    const data = await ffmpeg.readFile('output.mp4');
     const blob = new Blob([data.buffer], { type: 'video/mp4' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1417,7 +1439,7 @@ async function mergeVideosFfmpeg() {
     setTimeout(() => URL.revokeObjectURL(url), 30000);
     showToast('✅ 合并完成，已开始下载 storyboard_merged.mp4', 'success');
 
-    try { files.forEach(f => ffmpeg.FS('unlink', f)); ffmpeg.FS('unlink', 'output.mp4'); } catch(e) {}
+    try { files.forEach(f => ffmpeg.deleteFile(f)); await ffmpeg.deleteFile('output.mp4'); } catch(e) {}
   } catch(e) {
     showToast('❌ 合并失败: ' + e.message, 'error');
   } finally {
