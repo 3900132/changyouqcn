@@ -400,19 +400,12 @@
         <li><strong>单线程轮流</strong> — 每次请求轮流使用不同 Key，把限流压力分摊到各 Key，适合免费档限流场景</li>
         <li><strong>多线程并行</strong> — 批量生成时每个 Key 启动一条线程同时生成（线程数 = Key 数量），大幅提升批量吞吐</li>
       </ul>
-      <h3>💻 本地合并脚本的 ffmpeg 安装教程（图形化下载，无需命令行）</h3>
+      <h3>💻 本地合并脚本的 ffmpeg 说明（通常无需手动安装）</h3>
       <ul>
-        <li><strong>Windows 用户（推荐图形化安装）</strong>：
-          <ol>
-            <li>打开官网 <a href="https://www.gyan.dev/ffmpeg/builds/" target="_blank" rel="noopener" style="color:#6ec1ff;text-decoration:underline;word-break:break-all;">gyan.dev/ffmpeg/builds</a>，在 <b>release builds</b> 里下载 <b>ffmpeg-release-essentials.zip</b>（约 80MB）</li>
-            <li>解压到 <b>C:\ffmpeg</b>（解压后里面有 <b>bin\ffmpeg.exe</b>）</li>
-            <li>把合并脚本 merge_windows.bat 放到 <b>C:\ffmpeg\bin</b> 文件夹里，双击运行即可（脚本会自动用到同目录的 ffmpeg）</li>
-            <li>进阶：也可以把 C:\ffmpeg\bin 加入系统 PATH 环境变量，之后在任意位置都能运行脚本</li>
-          </ol>
-        </li>
-        <li><strong>Windows 命令行方式（可选）</strong>：按 Win 键输入 powershell，执行 <code>winget install ffmpeg</code></li>
+        <li><strong>Windows 用户</strong>：双击 merge_windows.bat 即可。脚本会自动按顺序完成：检测 ffmpeg →（未检测到时）自动从国内镜像下载单文件版 ffmpeg.exe（约 77MB，带进度条，约 12 秒）→ 按分镜顺序下载视频 → 无损拼接 → 清理分段。ffmpeg.exe 保存在脚本同目录，下次运行秒过检测。<b>全程无需命令行、无需配置环境变量</b></li>
         <li><strong>macOS 用户</strong>：打开 <a href="https://evermeet.cx/ffmpeg/" target="_blank" rel="noopener" style="color:#6ec1ff;text-decoration:underline;word-break:break-all;">evermeet.cx/ffmpeg</a> 下载 ffmpeg.zip，解压得到 ffmpeg 文件，与 merge_mac.command 放同一文件夹，终端里执行 <code>chmod +x merge_mac.command && ./merge_mac.command</code></li>
-        <li><strong>重要提示</strong>：把下载好的脚本和视频放在 <b>同一个空文件夹</b> 里运行，脚本会自动按分镜顺序下载、拼接并清理分段</li>
+        <li><strong>重要提示</strong>：把下载好的脚本放在<b>空文件夹</b>里运行；下载失败提示"链接已过期"时，回到页面重新生成分镜视频即可获得新链接</li>
+        <li><strong>线上站点用户优先用「🎬 合并成片 MP4」</strong>：站点部署了视频代理服务时浏览器内直接出片，零安装零脚本</li>
       </ul>
       <h3>🎬 输出内容说明</h3>
       <ul>
@@ -432,7 +425,8 @@
         <li><strong>视频URL地址</strong> — 导出所有成功生成的分镜视频URL至TXT文档</li>
         <li><strong>分镜图片URL地址</strong> — 导出所有成功生成的分镜图片URL至TXT文档</li>
         <li><strong>连播预览</strong> — 按分镜顺序自动连续播放所有已生成视频，手机/电脑均可用</li>
-        <li><strong>合并成片 MP4（电脑端）</strong> — 浏览器内无损拼接全部分镜视频为单个MP4并下载；首次使用需加载约25MB内核，纯本地处理不消耗API额度，移动端请使用连播预览</li>
+        <li><strong>合并成片 MP4（电脑端）</strong> — 浏览器内无损拼接全部分镜视频为单个MP4并下载；全程可视化进度（内核下载进度条/分段就绪列表/拼接百分比）；首次使用需加载约25MB内核；纯本地处理不消耗API额度；移动端请使用连播预览</li>
+        <li><strong>导出本地合并脚本</strong> — 浏览器内合并因视频链接跨域受限时的兜底：按系统导出自动化脚本（Windows版会自动下载ffmpeg），双击运行即在本机出片</li>
       </ul>
       <h3>🖼️ 批量生成功能</h3>
       <ul>
