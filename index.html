@@ -1110,6 +1110,18 @@ function submitPromptEdit() {
 let batchRunning = false;
 let batchCancelRequested = false;
 
+// ====== 多 Key 支持 ======
+// Key 串支持逗号/分号/换行分隔；单线程轮流(轮询)与多线程并行(一线程一Key)两种模式
+function getVideoKeys(videoModel) {
+  return ((videoModel && videoModel.key) || '').split(/[\s,;，；]+/).map(s => s.trim()).filter(Boolean);
+}
+let videoKeyCursor = 0;
+function nextVideoKey(videoModel) {
+  const keys = getVideoKeys(videoModel);
+  if (keys.length === 0) return videoModel.key;
+  return keys[videoKeyCursor++ % keys.length];
+}
+
 function requestBatchCancel() {
   if (!batchRunning) return;
   batchCancelRequested = true;
