@@ -1461,21 +1461,55 @@ async function mergeVideosFfmpeg() {
       showToast(`⏳ 加载内核 ${name}: ${pct}%（多 CDN 自动回退中）`, 'info');
     });
 
-    // 拉取各段视频并写入 wasm 虚拟文件系统（MP4 需要 https 直链且允许跨域）
+    // 拉取各段视频并写入 wasm 虚拟文件系统
+    // 优先 fetch 直链；被 CORS 拦截时回退到 <video> + MediaRecorder 转录（能播就能录，但需实时放完）
+    async function fetchVideoBuffer(url, shotId) {
+      if (url.startsWith('data:')) {
+        return Uint8Array.from(atob(url.split(',')[1]), c => c.charCodeAt(0));
+      }
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return new Uint8Array(await resp.arrayBuffer());
+      } catch (e) {
+        vlog('warning', '分镜 ' + shotId + ' 直链下载被跨域拦截，改用转录模式（需实时播放一遍）');
+        showToast(`⏳ 分镜 ${shotId} 跨域受限，改用转录模式（实时播放中，请稍候）...`, 'info');
+        return await new Promise((resolve, reject) => {
+          const v = document.createElement('video');
+          v.crossOrigin = 'anonymous';
+          v.src = url;
+          v.muted = true;
+          v.playsInline = true;
+          v.preload = 'auto';
+          const fail = (msg) => reject(new Error(`分镜 ${shotId} 无法获取视频数据（${msg}）。该网关的视频链接禁止跨域访问，请用「导出视频URL地址」手动下载后再本地合并`));
+          const timeout = setTimeout(() => fail('60s 超时'), 60000);
+          v.oncanplay = () => {
+            try {
+              const stream = v.captureStream ? v.captureStream() : v.mozCaptureStream();
+              const rec = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm' });
+              const chunks = [];
+              rec.ondataavailable = ev => { if (ev.data.size) chunks.push(ev.data); };
+              rec.onstop = () => {
+                clearTimeout(timeout);
+                new Blob(chunks, { type: 'video/webm' }).arrayBuffer().then(ab => resolve(new Uint8Array(ab)));
+              };
+              rec.onerror = () => fail('录制失败');
+              rec.start(200);
+              v.play().catch(() => fail('播放失败'));
+              v.onended = () => setTimeout(() => rec.state !== 'inactive' && rec.stop(), 300);
+            } catch (err) { fail(err.message); }
+          };
+          v.onerror = () => fail('视频加载失败');
+        });
+      }
+    }
+
     const files = [];
     for (let i = 0; i < shots.length; i++) {
       const s = shots[i];
-      showToast(`⏳ 下载分镜 ${s.id} 视频 (${i + 1}/${shots.length})...`, 'info');
-      let buf;
-      if (s.video.startsWith('data:')) {
-        const b64 = s.video.split(',')[1];
-        buf = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-      } else {
-        const resp = await fetch(s.video);
-        if (!resp.ok) throw new Error(`分镜 ${s.id} 视频下载失败 (HTTP ${resp.status})。若为跨域限制，请先用"导出视频URL地址"下载到本地`);
-        buf = new Uint8Array(await resp.arrayBuffer());
-      }
-      const name = 'seg' + String(i).padStart(2, '0') + '.mp4';
+      showToast(`⏳ 获取分镜 ${s.id} 视频 (${i + 1}/${shots.length})...`, 'info');
+      const buf = await fetchVideoBuffer(s.video, s.id);
+      const name = 'seg' + String(i).padStart(2, '0') + '.' + (buf[0] === 0x1A && buf[1] === 0x45 ? 'webm' : 'mp4');
       await ffmpeg.writeFile(name, buf);
       files.push(name);
     }
