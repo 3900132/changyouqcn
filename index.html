@@ -1456,12 +1456,13 @@ async function fetchCoreFile(filename, onProgress) {
       let buf;
       if (total && resp.body && resp.body.getReader) {
         const reader = resp.body.getReader();
-        const chunks = []; let got = 0;
+        const chunks = []; let got = 0; let lastPct = -1;
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
           chunks.push(value); got += value.length;
-          if (onProgress) onProgress(Math.round(got / total * 100));
+          const pct = Math.round(got / total * 100);
+          if (pct !== lastPct && (pct % 2 === 0 || pct === 100)) { lastPct = pct; if (onProgress) onProgress(pct, got, total); }
         }
         buf = new Uint8Array(got);
         let off = 0;
@@ -1537,8 +1538,17 @@ async function mergeVideosFfmpeg() {
 
   try {
     updateVideoStatus('generating', `<div style="display:flex;align-items:center;gap:8px;"><span class="spinner"></span> 正在加载合并内核（首次约 25MB，国内网络约 10~60 秒）...</div>`);
-    const ffmpeg = await loadFfmpegCore((name, pct) => {
-      updateVideoStatus('generating', `<div style="display:flex;align-items:center;gap:8px;"><span class="spinner"></span> 加载合并内核 ${name}: ${pct}%（多 CDN 自动回退中）</div>`);
+    const bar = (pct, got, total) => {
+      const filled = Math.round((pct / 100) * 25);
+      const barStr = '█'.repeat(filled) + '░'.repeat(25 - filled);
+      const mb = (n) => (n / 1048576).toFixed(1);
+      return `<div style="font-family:monospace;font-size:12px;margin-top:6px;color:var(--accent,#6366f1);">${barStr} ${pct}%　${mb(got)}/${mb(total)}MB</div>`;
+    };
+    const ffmpeg = await loadFfmpegCore((name, pct, got, total) => {
+      updateVideoStatus('generating',
+        `<div style="display:flex;align-items:center;gap:8px;"><span class="spinner"></span> 加载合并内核 ${name}</div>` +
+        (got != null && total ? bar(pct, got, total) : `<div style="font-size:12px;color:var(--text-dim);margin-top:6px;">${pct}%</div>`)
+      );
     });
 
     // 拉取各段视频并写入 wasm 虚拟文件系统
@@ -1658,7 +1668,26 @@ async function mergeVideosFfmpeg() {
     files.forEach(f => args.push('-i', f));
     const filter = files.map((_, i) => `[${i}:v]`).join('') + `concat=n=${files.length}:v=1:a=0`;
     args.push('-filter_complex', filter, '-preset', 'ultrafast', 'output.mp4');
-    await ffmpeg.exec(args);
+    // 拼接进度：ffmpeg progress 事件回报已处理微秒数，按总时长估算百分比
+    const totalUs = shots.reduce((acc, s) => acc + (parseFloat(s.timecode?.split('-')[1]) || 5) * 1000000, 0);
+    const onProg = ({ progress, time }) => {
+      let pct = totalUs > 0 ? Math.min(99, Math.round((time / totalUs) * 100)) : Math.min(99, Math.round(progress * 100));
+      if (pct > 0) {
+        const filled = Math.round((pct / 100) * 25);
+        const barStr = '█'.repeat(filled) + '░'.repeat(25 - filled);
+        const sec = Math.round(time / 1000000);
+        updateVideoStatus('generating',
+          `<div style="display:flex;align-items:center;gap:8px;"><span class="spinner"></span> 无损拼接中</div>` +
+          `<div style="font-family:monospace;font-size:12px;margin-top:6px;color:var(--accent,#6366f1);">${barStr} ${pct}%　已处理 ${sec}s</div>` +
+          mergeInfoHtml);
+      }
+    };
+    ffmpeg.on('progress', onProg);
+    try {
+      await ffmpeg.exec(args);
+    } finally {
+      ffmpeg.off('progress', onProg);
+    }
 
     const data = await ffmpeg.readFile('output.mp4');
     const blob = new Blob([data.buffer], { type: 'video/mp4' });
