@@ -1449,6 +1449,9 @@ async function mergeVideosFfmpeg() {
 
   const shots = state.storyboard.filter(s => s.video && s.videoStatus === 'done');
   if (shots.length < 2) { showToast('至少需要 2 个已生成的分镜视频才能合并', 'error'); return; }
+  const videoModel = state.models.video.find(m => m.id === state.selectedModels.video) || { name: 'agnes-video-v2.0' };
+  const apiKey = videoModel.key || '';
+  const baseUrl = (videoModel.url || '').replace(/\/+$/, '');
 
   const btn = document.getElementById('mergeFfmpegBtn');
   const confirmText = `将按分镜顺序（${shots.map(s => s.id).join(' → ')}）合并 ${shots.length} 段视频为单个 MP4。\n\n需要先加载约 25MB 合并内核（首次较慢，之后浏览器有缓存），合并期间请勿关闭页面。继续？`;
@@ -1462,53 +1465,86 @@ async function mergeVideosFfmpeg() {
     });
 
     // 拉取各段视频并写入 wasm 虚拟文件系统
-    // 优先 fetch 直链；被 CORS 拦截时回退到 <video> + MediaRecorder 转录（能播就能录，但需实时放完）
-    async function fetchVideoBuffer(url, shotId) {
+    // Agnes 视频 CDN 无 CORS 头，fetch/<video> 都会被拦。
+    // 但 /agnesapi 轮询端点允许跨域 (acao=*)：带 Authorization 请求可返回 base64 或可下载 url，
+    // Studio 后端正是用该端点下载成品的。策略：直链 fetch → agnesapi 换取 → <video> 转录。
+    async function fetchVideoBuffer(url, shotId, videoId, videoModelName, apiKey, baseUrl) {
       if (url.startsWith('data:')) {
         return Uint8Array.from(atob(url.split(',')[1]), c => c.charCodeAt(0));
       }
+      // 1) 直链尝试
       try {
         const resp = await fetch(url);
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        return new Uint8Array(await resp.arrayBuffer());
-      } catch (e) {
-        vlog('warning', '分镜 ' + shotId + ' 直链下载被跨域拦截，改用转录模式（需实时播放一遍）');
-        showToast(`⏳ 分镜 ${shotId} 跨域受限，改用转录模式（实时播放中，请稍候）...`, 'info');
-        return await new Promise((resolve, reject) => {
-          const v = document.createElement('video');
-          v.crossOrigin = 'anonymous';
-          v.src = url;
-          v.muted = true;
-          v.playsInline = true;
-          v.preload = 'auto';
-          const fail = (msg) => reject(new Error(`分镜 ${shotId} 无法获取视频数据（${msg}）。该网关的视频链接禁止跨域访问，请用「导出视频URL地址」手动下载后再本地合并`));
-          const timeout = setTimeout(() => fail('60s 超时'), 60000);
-          v.oncanplay = () => {
-            try {
-              const stream = v.captureStream ? v.captureStream() : v.mozCaptureStream();
-              const rec = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm' });
-              const chunks = [];
-              rec.ondataavailable = ev => { if (ev.data.size) chunks.push(ev.data); };
-              rec.onstop = () => {
-                clearTimeout(timeout);
-                new Blob(chunks, { type: 'video/webm' }).arrayBuffer().then(ab => resolve(new Uint8Array(ab)));
-              };
-              rec.onerror = () => fail('录制失败');
-              rec.start(200);
-              v.play().catch(() => fail('播放失败'));
-              v.onended = () => setTimeout(() => rec.state !== 'inactive' && rec.stop(), 300);
-            } catch (err) { fail(err.message); }
-          };
-          v.onerror = () => fail('视频加载失败');
-        });
+        if (resp.ok) return new Uint8Array(await resp.arrayBuffer());
+      } catch (e) { /* CORS 拦截，走 agnesapi */ }
+
+      // 2) /agnesapi 换取（该端点允许跨域且带鉴权；可能直接回视频流/base64，或 JSON 里带可下载 url）
+      const agnesOk = /agnes/i.test(baseUrl) || /agnes/i.test(videoModelName || '');
+      if (agnesOk && videoId) {
+        const root = (baseUrl.match(/^https?:\/\/[^/]+/i) || [baseUrl])[0];
+        const api = root + '/agnesapi?video_id=' + encodeURIComponent(videoId) + '&model_name=' + encodeURIComponent(videoModelName || 'agnes-video-v2.0');
+        try {
+          const resp = await fetch(api, { headers: { 'Authorization': 'Bearer ' + apiKey } });
+          if (resp.ok) {
+            const ct = (resp.headers.get('content-type') || '').toLowerCase();
+            if (ct.includes('video') || ct.includes('octet-stream')) {
+              vlog('info', '分镜 ' + shotId + ' 通过 /agnesapi 直接获取视频流');
+              return new Uint8Array(await resp.arrayBuffer());
+            }
+            const j = await resp.json();
+            const dl = (typeof j === 'string' && j.length > 128 && /^[A-Za-z0-9+/=]+$/.test(j.slice(0, 64))) ? j
+              : (j.url || j.video_url || j.output_url || (j.data && (j.data.url || j.data.video_url || j.data.output_url)) || '');
+            if (dl.startsWith('data:')) {
+              return Uint8Array.from(atob(dl.split(',')[1]), c => c.charCodeAt(0));
+            }
+            if (dl.startsWith('base64,')) {
+              return Uint8Array.from(atob(dl.slice(7)), c => c.charCodeAt(0));
+            }
+            if (/^https?:\/\//.test(dl)) {
+              const r2 = await fetch(dl);
+              if (r2.ok) { vlog('info', '分镜 ' + shotId + ' 通过 /agnesapi 换取到可跨域的下载地址'); return new Uint8Array(await r2.arrayBuffer()); }
+            }
+          }
+        } catch (e) { vlog('warning', '分镜 ' + shotId + ' agnesapi 换取失败: ' + e.message); }
       }
+
+      // 3) <video> 转录兜底（需要视频源至少允许带凭据播放）
+      vlog('warning', '分镜 ' + shotId + ' 直链下载被跨域拦截，改用转录模式（需实时播放一遍）');
+      showToast(`⏳ 分镜 ${shotId} 跨域受限，改用转录模式（实时播放中，请稍候）...`, 'info');
+      return await new Promise((resolve, reject) => {
+        const v = document.createElement('video');
+        v.crossOrigin = 'anonymous';
+        v.src = url;
+        v.muted = true;
+        v.playsInline = true;
+        v.preload = 'auto';
+        const fail = (msg) => reject(new Error(`分镜 ${shotId} 无法获取视频数据（${msg}）。该网关的视频链接禁止跨域访问，请用「导出视频URL地址」手动下载后再本地合并`));
+        const timeout = setTimeout(() => fail('60s 超时'), 60000);
+        v.oncanplay = () => {
+          try {
+            const stream = v.captureStream ? v.captureStream() : v.mozCaptureStream();
+            const rec = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm' });
+            const chunks = [];
+            rec.ondataavailable = ev => { if (ev.data.size) chunks.push(ev.data); };
+            rec.onstop = () => {
+              clearTimeout(timeout);
+              new Blob(chunks, { type: 'video/webm' }).arrayBuffer().then(ab => resolve(new Uint8Array(ab)));
+            };
+            rec.onerror = () => fail('录制失败');
+            rec.start(200);
+            v.play().catch(() => fail('播放失败'));
+            v.onended = () => setTimeout(() => rec.state !== 'inactive' && rec.stop(), 300);
+          } catch (err) { fail(err.message); }
+        };
+        v.onerror = () => fail('视频加载失败');
+      });
     }
 
     const files = [];
     for (let i = 0; i < shots.length; i++) {
       const s = shots[i];
       showToast(`⏳ 获取分镜 ${s.id} 视频 (${i + 1}/${shots.length})...`, 'info');
-      const buf = await fetchVideoBuffer(s.video, s.id);
+      const buf = await fetchVideoBuffer(s.video, s.id, s.videoId || s.taskId || '', videoModel.name, apiKey, baseUrl);
       const name = 'seg' + String(i).padStart(2, '0') + '.' + (buf[0] === 0x1A && buf[1] === 0x45 ? 'webm' : 'mp4');
       await ffmpeg.writeFile(name, buf);
       files.push(name);
@@ -1913,6 +1949,7 @@ async function generateShotVideo(index, keyOverride) {
       const videoUrl = extractVideoUrl(taskData);
       if (videoUrl) {
         state.storyboard[index].video = videoUrl;
+        state.storyboard[index].videoId = videoId;
         state.storyboard[index].videoStatus = 'done';
         saveState();
         renderStoryboard();
@@ -2006,6 +2043,7 @@ async function generateShotVideo(index, keyOverride) {
 
     if (videoUrl) {
       state.storyboard[index].video = videoUrl;
+      state.storyboard[index].videoId = videoId;
       state.storyboard[index].videoStatus = 'done';
       saveState();
       renderStoryboard();
