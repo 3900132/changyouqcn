@@ -1418,13 +1418,13 @@ function buildVideoPayload(provider, modelName, prompt, negPrompt, shot) {
     if (shot.image) payload.first_frame_image = shot.image;
     return payload;
   }
-  // Agnes Video 2.5 系列新参数格式：禁止 width/height/num_frames/frame_rate/negative_prompt/image；
-  // 只支持 mode(text|keyframe|reference)/seconds/size/aspect_ratio/first_frame（与官方 Studio 一致）
-  const payload = { model: modelName || 'agnes-video-v2.0', prompt: prompt };
-  if (shot.image) { payload.mode = 'keyframe'; payload.first_frame = shot.image; }
+  const ratioMap = { '2.35:1': '21:9', '16:9': '16:9', '1:1': '1:1', '9:16': '9:16' };
+  // Agnes Video 2.5 官方格式：mode(text|keyframe|reference)；seconds 为字符串"4"-"12"；
+  // size 仅 "720P"；first_frame 必须是公网可访问的图片 URL，base64 会导致 invalid_json
+  const payload = { model: modelName || 'agnes-video-v2.0', prompt: prompt, seconds: '5', size: '720P', aspect_ratio: ratioMap[getSpecRatio()] || '16:9' };
+  const isHttpImg = shot.image && /^https?:\/\//i.test(shot.image);
+  if (isHttpImg) { payload.mode = 'keyframe'; payload.first_frame = shot.image; }
   else { payload.mode = 'text'; }
-  payload.seconds = 5;
-  payload.size = '720P';
   return payload;
 }
 
