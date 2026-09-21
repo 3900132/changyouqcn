@@ -283,6 +283,24 @@
         </button>
         <button class="btn btn-danger" onclick="requestBatchCancel()" id="cancelBatchBtn" style="display:none;padding:12px;font-size:14px;" aria-label="取消批量任务">⏹ 取消</button>
       </div>
+      <div class="card" id="videoUseModeCard" style="margin-top:12px;padding:12px 14px;">
+        <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          ⚙️ 使用模式
+        </div>
+        <div style="display:flex;gap:16px;font-size:13px;margin-bottom:6px;">
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+            <input type="radio" name="videoUseMode" value="serial" onchange="setVideoUseMode('serial')" checked>
+            🗂️ 单线程轮流
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+            <input type="radio" name="videoUseMode" value="parallel" onchange="setVideoUseMode('parallel')">
+            ⚡ 多线程并行
+          </label>
+        </div>
+        <div id="videoUseModeDesc" style="font-size:12px;color:var(--text-dim);line-height:1.6;">
+          <strong>单线程轮流</strong>：每次请求轮流使用不同 Key，适合限流场景
+        </div>
+      </div>
     </div>
 
     <!-- Video Generation Status Module -->
@@ -1121,6 +1139,14 @@ function nextVideoKey(videoModel) {
   if (keys.length === 0) return videoModel.key;
   return keys[videoKeyCursor++ % keys.length];
 }
+let videoUseMode = 'serial'; // serial: 轮流轮询取Key | parallel: 一Key一线程并行生成
+function setVideoUseMode(mode) {
+  videoUseMode = (mode === 'parallel') ? 'parallel' : 'serial';
+  const desc = document.getElementById('videoUseModeDesc');
+  desc.innerHTML = videoUseMode === 'parallel'
+    ? '<strong>多线程并行</strong>：启动多个线程同时使用不同 Key 生成，线程数 = Key 数量'
+    : '<strong>单线程轮流</strong>：每次请求轮流使用不同 Key，适合限流场景';
+}
 
 function requestBatchCancel() {
   if (!batchRunning) return;
@@ -1200,6 +1226,36 @@ async function batchGenerateVideos() {
 
   let successCount = 0;
   let skipCount = 0;
+
+  // 多线程并行：每个 Key 一条线程，从共享队列取分镜；单线程沿用逐镜循环
+  const keys = getVideoKeys(videoModel);
+  if (videoUseMode === 'parallel' && keys.length > 1) {
+    const queue = [];
+    for (let i = 0; i < state.storyboard.length; i++) {
+      if (state.storyboard[i].prompt && !state.storyboard[i].video) queue.push(i);
+    }
+    const total = queue.length + state.storyboard.filter(s => s.prompt && s.video).length;
+    let cursor = 0;
+    async function worker(key) {
+      while (!batchCancelRequested) {
+        const idx = cursor++;
+        if (idx >= queue.length) return;
+        const i = queue[idx];
+        showToast(`🎥 分镜 ${i + 1} 视频生成中... (Key #${keys.indexOf(key) + 1})`, 'info');
+        try {
+          await generateShotVideo(i, key);
+        } catch(e) {
+          showToast(`分镜 ${i + 1} 生成失败: ${e.message}`, 'error');
+        }
+        if (state.storyboard[i].video) { successCount++; }
+        else { skipCount++; showToast(`⚠️ 分镜 ${i + 1} 视频失败，跳过`, 'warning'); }
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      if (batchCancelRequested) { cursor = queue.length; }
+    }
+    updateVideoStatus('generating', `<div style="display:flex;align-items:center;gap:8px;"><span class="spinner"></span> 多线程并行：${keys.length} 个 Key 同时生成 ${total} 个分镜视频...</div>`);
+    await Promise.all(keys.map(k => worker(k)));
+  } else {
   for (let i = 0; i < state.storyboard.length; i++) {
     if (!state.storyboard[i].prompt) continue;
     // Skip if already has video
@@ -1221,6 +1277,7 @@ async function batchGenerateVideos() {
     }
     // Delay between videos
     if (i < state.storyboard.length - 1) await new Promise(r => setTimeout(r, 2000));
+  }
   }
   batchRunning = false;
   batchCancelRequested = false;
@@ -1496,7 +1553,7 @@ function updateVideoStatus(status, msg) {
   content.innerHTML = msg;
 }
 
-async function generateShotVideo(index) {
+async function generateShotVideo(index, keyOverride) {
   const shot = state.storyboard[index];
   if (!shot || !shot.prompt) { showToast('请先生成故事板内容', 'error'); return; }
   if (shot.videoStatus === 'generating') { showToast('该分镜视频正在生成中', 'warning'); return; }
@@ -1505,7 +1562,7 @@ async function generateShotVideo(index) {
   if (!videoModel || !videoModel.key) { showToast('请先配置视频大模型API', 'error'); return; }
 
   const baseUrl = (videoModel.url || '').replace(/\/+$/, '');
-  const apiKey = videoModel.key;
+  const apiKey = keyOverride || nextVideoKey(videoModel);
   const startTime = Date.now();
 
   // Update UI
