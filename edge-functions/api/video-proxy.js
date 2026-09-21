@@ -47,9 +47,14 @@ export async function onRequest(context) {
   }
 
   // 透传 Range（前端/播放器可能分段拉流）
+  // 同时带常规浏览器 User-Agent 与 Accept 语言头：Agnes 域名套了 Cloudflare 盾，
+  // 裸请求（无 UA/无 Cookie）会被人机校验拦截（"Please enable cookies"）
   const headers = new Headers();
   const range = request.headers.get('range');
   if (range) headers.set('range', range);
+  headers.set('user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36');
+  headers.set('accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8');
+  headers.set('accept-language', 'zh-CN,zh;q=0.9,en;q=0.8');
 
   let upstream;
   try {
