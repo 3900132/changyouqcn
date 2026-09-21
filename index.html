@@ -1330,12 +1330,53 @@ function exportVideoURLs() {
 }
 
 // ====== 导出本地合并脚本：跨域导致浏览器内合并失败时的兜底方案 ======
+// 将 Base64 字符串按行分块（bat 的 echo 单行有长度限制 ~8191 字符）
+function chunkB64(b64) {
+  const lines = [];
+  for (let i = 0; i < b64.length; i += 800) lines.push(b64.slice(i, i + 800));
+  return lines;
+}
 // 生成 Windows(.bat) 与 Mac/Linux(.sh) 双脚本：curl 按分镜顺序下载 + ffmpeg 无损拼接
 function exportMergeScript() {
   const shots = state.storyboard.filter(s => s.video && s.video.startsWith('http') && s.videoStatus === 'done');
   if (shots.length < 2) { showToast('至少需要 2 个已生成的分镜视频', 'error'); return; }
 
   const list = shots.map((s, i) => ({ n: String(i + 1).padStart(2, '0'), id: s.id, url: s.video }));
+
+  // PowerShell 安装脚本：前端直接生成完整 .ps1 一并导出（Base64 编码防止任何转义问题），
+  // bat 只负责 certutil 解码后执行 —— 零转义、任何 Windows 版本行为一致
+  const ps1Content = [
+    "$ErrorActionPreference = 'Stop'",
+    "$ProgressPreference = 'SilentlyContinue'",
+    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12",
+    "$u = 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip'",
+    "$o = 'ffmpeg.zip'",
+    "Write-Host ('下载 ffmpeg 内核: ' + $u)",
+    "$r = [Net.HttpWebRequest]::Create($u)",
+    "$resp = $r.GetResponse()",
+    "$total = $resp.ContentLength",
+    "$s = $resp.GetResponseStream()",
+    "$fs = [IO.File]::Create((Join-Path (Get-Location) $o))",
+    "$buf = New-Object byte[] 65536",
+    "$got = 0; $last = -1",
+    "while (($n = $s.Read($buf, 0, $buf.Length)) -gt 0) {",
+    "  $fs.Write($buf, 0, $n); $got += $n",
+    "  if ($total -gt 0) {",
+    "    $p = [int]($got * 100 / $total)",
+    "    if ($p -ne $last) {",
+    "      $last = $p",
+    "      $bar = ('#' * [int]($p / 2)).PadRight(50, '-')",
+    "      Write-Host (\"`r下载: [$bar] $p% ($([int]($got/1MB))MB)\") -NoNewline",
+    "    }",
+    "  }",
+    "}",
+    "$fs.Close(); $s.Close(); $resp.Close(); Write-Host ''",
+    "Write-Host '下载完成，正在解压（约 10~30 秒）...'",
+    "Expand-Archive -Path $o -DestinationPath 'ffmpeg_tmp' -Force",
+    "Remove-Item $o -Force",
+    "Write-Host '解压完成'"
+  ].join('\r\n') + '\r\n';
+  const ps1B64 = btoa(unescape(encodeURIComponent(ps1Content)));
 
   const batLines = [
     '@echo off', 'chcp 65001 >nul', 'echo === 畅有趣故事板 本地合并脚本 (Windows) ===', 'echo.', 'cd /d "%~dp0"',
@@ -1346,12 +1387,14 @@ function exportMergeScript() {
     'echo.',
     'echo 未检测到 ffmpeg，开始自动下载（约 80MB，全程自动，无需操作）...',
     'echo.',
-    'powershell -NoProfile -Command "$ProgressPreference=\'SilentlyContinue\'; [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $u=\'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip\'; $o=\'ffmpeg.zip\'; $r=[Net.HttpWebRequest]::Create($u); $resp=$r.GetResponse(); $total=$resp.ContentLength; $s=$resp.GetResponseStream(); $fs=[IO.File]::Create($o); $buf=New-Object byte[] 65536; $got=0; $last=-1; while(($n=$s.Read($buf,0,$buf.Length)) -gt 0){ $fs.Write($buf,0,$n); $got+=$n; if($total -gt 0){ $p=[int]($got*100/$total); if($p -ne $last){ $last=$p; Write-Host (\"\\r下载内核: [\" + (\"#\"*[int]($p/2)).PadRight(50,\"-\") + \"] \" + $p + \"%  (\" + [int]($got/1MB) + \"MB)\" ) -NoNewline } } }; $fs.Close(); $s.Close(); $resp.Close(); Write-Host \"\" "',
-    'echo.',
-    'echo 正在解压（约 10~30 秒）...',
-    'powershell -NoProfile -Command "Expand-Archive -Path \'ffmpeg.zip\' -DestinationPath \'ffmpeg_tmp\' -Force"',
+    // 解码随脚本导出的 ps1 安装器并执行（Base64 传输，无任何转义风险）
+    ...chunkB64(ps1B64).map((chunk) => `<nul set /p="${chunk}">>ps1_b64.txt`),
+    'certutil -f -decode ps1_b64.txt dl_ffmpeg.ps1 >nul',
+    'powershell -NoProfile -ExecutionPolicy Bypass -File dl_ffmpeg.ps1',
+    'del ps1_b64.txt dl_ffmpeg.ps1 2>nul',
+    'if not exist ffmpeg.zip (echo [错误] 内核下载失败，请检查网络后重试，或手动下载：https://www.gyan.dev/ffmpeg/builds/ & pause & exit /b 1)',
     'for /d %%D in (ffmpeg_tmp\\*) do robocopy "%%D\\bin" ffmpeg\\bin /e >nul',
-    'rmdir /s /q ffmpeg_tmp & del ffmpeg.zip',
+    'rmdir /s /q ffmpeg_tmp',
     'if exist "ffmpeg\\bin\\ffmpeg.exe" (set "FF=%~dp0ffmpeg\\bin\\ffmpeg.exe" & set "PATH=%~dp0ffmpeg\\bin;%PATH%" & goto :have_ffmpeg)',
     'echo [错误] 自动安装失败，请手动下载：https://www.gyan.dev/ffmpeg/builds/',
     'pause & exit /b 1',
